@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="ch1-f">
+<html lang="en" data-build="ch1-g">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -4333,7 +4333,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   /* ---------------- pointer: drag rotates, still tap = tap ---------------- */
   Stage.setInteraction = function (opts) {
     interaction = { mode: (opts && opts.mode) || 'none', onTap: opts && opts.onTap || null,
-      onFirstTouch: opts && opts.onFirstTouch || null };
+      onFirstTouch: opts && opts.onFirstTouch || null, onFlex: opts && opts.onFlex || null };
     if (canvas) canvas.style.cursor = interaction.mode === 'none' ? 'default' : 'grab';
   };
   function bindPointer() {
@@ -4350,7 +4350,10 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       if (!drag || e.pointerId !== drag.id) return;
       var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (Math.abs(e.clientX - drag.x0) > 6 || Math.abs(e.clientY - drag.y0) > 6) drag.moved = true;
-      if (drag.moved && interaction.mode !== 'none') {
+      if (drag.moved && interaction.mode === 'flex') {
+        // ch1-g: sideways swipe only flexes the head Down (left) and Up (right); never yaw, pitch or camera
+        if (interaction.onFlex) interaction.onFlex(dx);
+      } else if (drag.moved && interaction.mode !== 'none') {
         headGroup.rotation.y = normAngle(headGroup.rotation.y + dx * 0.008);
         if (interaction.mode === 'yawpitch') {
           headGroup.rotation.x = clamp(headGroup.rotation.x + dy * 0.006, -0.7, 0.7);
@@ -4901,6 +4904,24 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       root.updateMatrixWorld(true);
     }
 
+    // ch1-g: touch flex. One number, -1 (full up) .. +1 (full down), mapped on the same Down / Up range the scripted
+    // poses use (chinDown and chinUp). Same neck morph and neck bones as animateNeckTo, so the pole and the lines that
+    // sit on the skull pivot follow the head. Never changes the yaw or the camera.
+    function pitchToFlex(p) { return p >= 0 ? p / POSES.chinDown.pitch : p / -POSES.chinUp.pitch; }
+    function flexToPitch(f) { return f >= 0 ? f * POSES.chinDown.pitch : f * -POSES.chinUp.pitch; }
+    function setFlex(f) {
+      if (!refs.morph) return;
+      if (neckAnim && neckAnim.resolve) { var r = neckAnim.resolve; neckAnim = null; r(); }   // touch takes over from a scripted move
+      f = clamp(f, -1, 1);
+      var p = flexToPitch(f), bs = CHAIN_SHARES[0], ts = 1 - bs;
+      applyCpuNeckMorph(p, 0, 0);
+      if (refs.neckBone && neckNeutralQ) refs.neckBone.quaternion.copy(neckNeutralQ).multiply(eulerQuat(p * bs, 0, 0));
+      if (refs.neckBoneTip && tipNeutralQ) refs.neckBoneTip.quaternion.copy(tipNeutralQ).multiply(eulerQuat(p * ts, 0, 0));
+      poseKey = 'flex';
+      root.updateMatrixWorld(true);
+    }
+    function flexValue() { return refs.morph ? pitchToFlex(refs.morph.pitch) : 0; }
+
     function attach(child, parent) {
       parent.updateWorldMatrix(true, false); child.updateWorldMatrix(true, false);
       var inv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
@@ -5272,15 +5293,18 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
     // --- ch1-e: yellow dotted 90 line (1.2). Lives on the SkullPivot at the occipital, pointing straight out of the
     // back of the head (the same place and direction as the 1.2 red line it replaces), so it is cemented to the head.
-    function buildYellowDotted(len) {
+    // ch1-g: the inner end starts ON the green pole (ext = how far the old start, at the occipital, was from the pole);
+    // dash and gap sizes stay exactly as in ch1-f, so the line just gets longer toward the pole.
+    function buildYellowDotted(len, ext) {
+      var total = len + (ext || 0);
       var g = new THREE.Group(); g.name = 'YellowDotted90';
       var dir = new THREE.Vector3(0, 0, -1);
       var radius = len * YD_RADIUS, dash = len * YD_DASH, gap = len * YD_GAP;
       var mat = new THREE.MeshBasicMaterial({ color: LINE_YELLOW, transparent: true, opacity: 1, depthTest: true, depthWrite: true, toneMapped: false });
       var q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
       var dashes = [], along = 0;
-      while (along + dash * 0.5 <= len + 1e-6) {
-        var l = Math.min(dash, len - along);
+      while (along + dash * 0.5 <= total + 1e-6) {
+        var l = Math.min(dash, total - along);
         var m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, l, 10, 1, false), mat);
         m.quaternion.copy(q); m.position.copy(dir.clone().multiplyScalar(along + l * 0.5));
         m.frustumCulled = false; m.renderOrder = 0;
@@ -5288,8 +5312,8 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
         g.add(m); dashes.push(m);
         along += dash + gap;
       }
-      var tip = new THREE.Object3D(); tip.position.copy(dir.clone().multiplyScalar(len)); g.add(tip);
-      g.userData = { len: len, dir: dir, dashes: dashes, mat: mat, tip: tip, dash: dash, gap: gap, radius: radius };
+      var tip = new THREE.Object3D(); tip.position.copy(dir.clone().multiplyScalar(total)); g.add(tip);
+      g.userData = { len: total, baseLen: len, ext: ext || 0, dir: dir, dashes: dashes, mat: mat, tip: tip, dash: dash, gap: gap, radius: radius };
       g.visible = false;
       return g;
     }
@@ -5299,6 +5323,14 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       var reach = g.userData.len * s;
       g.userData.dashes.forEach(function (m) { m.visible = s > 0.001 && m.userData.start < reach - 1e-6; });
       g.visible = s > 0.001;
+    }
+    // ch1-g: on the opaque-head screens the part of the line inside the head is drawn over the skin (like the soft pole
+    // there), so the inner end visibly meets the pole. On the see-through screens it stays depth-tested.
+    function setYellowOnTop(on) {
+      var g = refs.yellowLine; if (!g) return;
+      refs.yellowOnTop = !!on;
+      g.userData.mat.depthTest = !on; g.userData.mat.depthWrite = !on; g.userData.mat.needsUpdate = true;
+      g.userData.dashes.forEach(function (m) { m.renderOrder = on ? 3 : 0; });
     }
     var yellowTok = 0;
     function drawYellow(dur) {
@@ -5398,8 +5430,12 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     hidePullImmediate();
     buildTeachYellowOverlay(pullLen);
     // ch1-e: the yellow dotted line has the same origin, direction and length as the 1.2 red line it replaces.
-    var yl = buildYellowDotted(pullLen);
-    yl.position.copy(refs.occipitalLocal);
+    // ch1-g: it starts on the pole (same height as before, straight back from the pole, 90 degrees to it)
+    root.updateMatrixWorld(true);
+    var poleLoc = refs.skullPivot.worldToLocal(refs.verticalPole.getWorldPosition(new THREE.Vector3()));
+    var ydExt = Math.max(0, poleLoc.z - refs.occipitalLocal.z);
+    var yl = buildYellowDotted(pullLen, ydExt);
+    yl.position.set(poleLoc.x, refs.occipitalLocal.y, poleLoc.z);
     refs.skullPivot.add(yl);
     refs.yellowLine = yl; refs.yellowScale = 0; refs.yellow90 = false; refs.skinOpacity = 1;
     // Plane line: about 0.55 head widths long; starts on the blue plane above the upper crown.
@@ -5560,13 +5596,14 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
         setPoleOpacity(0);
         setPlanesOpacity(0);
         setPoseImmediate('neutral');
-        yellowTok++; setYellowScale(0); refs.yellow90 = false;
+        yellowTok++; setYellowScale(0); refs.yellow90 = false; setYellowOnTop(false);
         setSeeThrough(1);
         setAxisOnPole(false);
         Stage.kick();
       },
       // ch1-e (1.2)
       drawYellow: function (dur) { return drawYellow(dur == null ? PULL_DRAW_MS : dur); },
+      yellowOnTop: function (on) { setYellowOnTop(on); Stage.kick(); },
       showYellowNow: function () { yellowTok++; setYellowScale(1); Stage.kick(); },
       yellow90: function (on) { refs.yellow90 = !!on; Stage.kick(); },
       seeThrough: function (to, dur) { return fadeValue('see', refs.skinOpacity, to, dur, setSeeThrough); },
@@ -5584,6 +5621,10 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
         var vis = g.userData.dashes.filter(function (m) { return m.visible; }).length;
         var pxPerUnit = Math.hypot(css(e)[0] - css(o)[0], css(e)[1] - css(o)[1]) / g.userData.len;
         return { start: css(o), end: css(e), color: '#' + g.userData.mat.color.getHexString().toUpperCase(), dashes: g.userData.dashes.length, visibleDashes: vis,
+          startToPoleAxis: (function () { var vp = refs.verticalPole; if (!vp) return null; var pp = vp.getWorldPosition(new THREE.Vector3()), ax = new THREE.Vector3(0, 1, 0).transformDirection(vp.matrixWorld).normalize();
+            var v = o.clone().sub(pp); return +v.sub(ax.multiplyScalar(v.dot(ax))).length().toFixed(5); })(),
+          startPoleScreen: (function () { var vp = refs.verticalPole; if (!vp) return null; var pp = vp.getWorldPosition(new THREE.Vector3()), ax = new THREE.Vector3(0, 1, 0).transformDirection(vp.matrixWorld).normalize();
+            var v = o.clone().sub(pp); return css(pp.clone().add(ax.multiplyScalar(v.dot(ax)))); })(), onTop: !!refs.yellowOnTop, ext: g.userData.ext,
           scale: refs.yellowScale, tag90: refs.yellow90, angleToPoleDeg: +(Math.acos(Math.min(1, Math.abs(dW.dot(poleW)))) / DEG).toFixed(2),
           dashLen: g.userData.dash, gapLen: g.userData.gap, radius: g.userData.radius, len: g.userData.len, depthTest: g.userData.mat.depthTest };
       },
@@ -5611,6 +5652,9 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       skinOpacity: function () { return refs.skinOpacity; },
       skinMatOpacity: function () { return matsOf(refs.skinMeshes[0])[0].opacity; },
       pose: function (key, dur) { return animateNeckTo(key, dur); },
+      flexBy: function (df) { setFlex(flexValue() + df); Stage.kick(); },
+      flexSet: function (f) { setFlex(f); Stage.kick(); },
+      flexValue: flexValue,
       poseNow: function (key) { setPoseImmediate(key); Stage.kick(); },
       poseKey: function () { return poseKey; },
       fadePole: function (to, dur) { var from = refs.verticalPole ? matsOf(refs.verticalPole)[0].opacity * (refs.verticalPole.visible ? 1 : 0) : 0; return fadeValue('pole', from, to * refs.poleOrigOpacity, dur, setPoleOpacity); },
@@ -5671,13 +5715,13 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
 </script>
 <script>
-/* MAhD learning app: Haircut by Design Fundamentals, Chapter 1. Build ch1-f.
+/* MAhD learning app: Haircut by Design Fundamentals, Chapter 1. Build ch1-g.
  * Screens, lesson steps, Chapter 1 test (100% to pass, retry only the missed ones), saved progress.
  * No game parts (no streaks, points, rewards), no sounds, no confetti.
  */
 (function () {
   'use strict';
-  var BUILD = 'ch1-f';
+  var BUILD = 'ch1-g';
   document.documentElement.setAttribute('data-build', BUILD);
   console.info('[mahd] build ' + BUILD);
 
@@ -5704,12 +5748,8 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     S.setInteraction({ mode: 'yawpitch', onFirstTouch: function () { S.setSpin(false); } });
   }
   var LAYOUT_11_PROXY = "Knowing the bones of the head gives you a starting point. Later we'll work in specific zones, so learn where each one is.";
-  var SPIN_VIEWS_12 = (function () {
-    var v = [];
-    for (var k = 0; k < 24; k++) [-0.7, 0, 0.7].forEach(function (pt) { v.push({ yaw: -Math.PI + k * Math.PI / 12, pitch: pt }); });
-    v.push({ yaw: -Math.PI / 2, pitch: 0, poses: ['neutral', 'chinDown'] }); // the tilt screen (profile, head Down)
-    return v;
-  })();
+  var FLEX_POSES = ['neutral', 'chinDown', 'chinUp'];
+  var FLEX_PX = 150;   // ch1-g: a swipe this long (left or right) is the whole Down (or Up) range
   var FIT_12 = { what: { skin: true, skinMinY: -0.35, pole: true, yline: true, ylineReach: 1.0 }, lim: { x: 0.74, top: 0.74, bottom: -0.66 } };
   var reduced = S.reducedMotion;
 
@@ -6213,21 +6253,23 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       // ch1-e (Michael round 1). 6 steps: text-only intro, vertical line, yellow dotted 90 line, head Down, hero, end.
       // Floor vs Head is removed. Every 3D step turns the head about the green pole (axisOnPole) and uses one fitted
       // frame (frame12) that holds the head, the pole and the yellow dotted line at every yaw, so steps never jump.
-      function frame12(m, dur) { return useFit(m, '1.2-spin', SPIN_VIEWS_12, null, FIT_12.what, FIT_12.lim, dur); }
+      // ch1-g (Michael round 2): no rotation and no spin anywhere in 1.2. The head stays upright in profile and a
+      // sideways swipe only flexes it Down (left) or Up (right) on the existing neck flex; the frame is fitted over
+      // the whole flex range (Up, upright, Down) so the head, the pole and the yellow line never leave it.
+      function frame12(m, dur) { return useFit(m, '1.2-flex', PROFILE, FLEX_POSES, FIT_12.what, FIT_12.lim, dur); }
       function base12(m, o) {
-        m.reset(); m.axisOnPole(true);
+        m.reset(); m.axisOnPole(true); m.yellowOnTop(true);   // ch1-g: the line is drawn over the skin, so its inner end visibly meets the pole
         if (o.see) m.seeThrough(m.seeThroughFactor, 0);
         if (o.pole) m.fadePole(1, 0);
         if (o.yellow) { m.showYellowNow(); m.yellow90(true); }
         frame12(m, 0);
       }
-      // ch1-f: auto-turn exactly like the 1.1 head (spinUntilTouch). touch12 is called at the start of the screen,
-      // so a touch while the screen is still setting up also counts: then the spin never starts on that screen.
-      function touch12(x) { S.setInteraction({ mode: 'yawpitch', onFirstTouch: function () { x.touched = true; } }); }
-      function spin12(x) {
-        if (!x.alive()) return;
-        if (x.touched) { S.setInteraction({ mode: 'yawpitch' }); return; }
-        spinUntilTouch();
+      // ch1-g: touch = flex only. Left swipe flexes Down, right swipe flexes Up, in proportion to the swipe (FLEX_PX px =
+      // the whole range), clamped to the existing Down / Up range. A touch during a scripted move takes over from where
+      // the head is (x.touched stops the rest of that script).
+      function flex12(x) {
+        S.setSpin(false);
+        S.setInteraction({ mode: 'flex', onFirstTouch: function () { x.touched = true; }, onFlex: function (dx) { if (x.alive()) x.m.flexBy(-dx / FLEX_PX); } });
       }
       return [
         { name: 'intro', line: L12.intro, textOnly: true,
@@ -6241,44 +6283,42 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
         { name: 'vertical', line: L12.vertical,
           // change 3: head 30% more transparent, green pole (GLB node "Cylinder") through the head, then spin
           enter: function (x) {
-            base12(x.m, {}); touch12(x);
+            base12(x.m, {}); flex12(x);
             // the head is already in profile; hold still while the 3D fades in after the text-only screen
             return S.setView(PROFILE, 0).then(function () { return wait(800); })
-              .then(function () { return x.alive() && Promise.all([x.m.seeThrough(x.m.seeThroughFactor, 900), x.m.fadePole(1, 900)]); })
-              .then(function () { spin12(x); });
+              .then(function () { return x.alive() && Promise.all([x.m.seeThrough(x.m.seeThroughFactor, 900), x.m.fadePole(1, 900)]); });
           } },
         { name: 'line-90', line: L12.vertical,
           // change 3: the yellow dotted line draws 90 out from the pole, with the 90 tag, then spin
           enter: function (x) {
-            base12(x.m, { see: true, pole: true }); touch12(x);
+            base12(x.m, { see: true, pole: true }); flex12(x);
             return S.setView(PROFILE, 600).then(function () { return x.alive() && wait(250); })
-              .then(function () { if (!x.alive()) return; x.m.yellow90(true); return x.m.drawYellow(); })
-              .then(function () { spin12(x); });
+              .then(function () { if (!x.alive()) return; x.m.yellow90(true); return x.m.drawYellow(); });
           } },
         { name: 'tilt', line: L12.vertical,
           // head goes Down and back up: pole and yellow line stay cemented (same look as the screens before it)
           enter: function (x) {
-            base12(x.m, { see: true, pole: true, yellow: true });
+            base12(x.m, { see: true, pole: true, yellow: true }); flex12(x);
             return S.setView(PROFILE, 600).then(function () { return wait(400); })
-              .then(function () { return x.alive() && x.m.pose('chinDown', 900); })
-              .then(function () { return x.alive() && wait(1300); })
-              .then(function () { return x.alive() && x.m.pose('neutral', 900); });
+              .then(function () { return x.alive() && !x.touched && x.m.pose('chinDown', 900); })
+              .then(function () { return x.alive() && !x.touched && wait(1300); })
+              .then(function () { return x.alive() && !x.touched && x.m.pose('neutral', 900); });
           } },
         { name: 'hero', line: L12.hero, dip: true,
           // change 5: 1.3y closer as before (soft vertical, upright hold, then Down, slow push-in); the red line is
           // now the yellow dotted line, with its 90 tag
           enter: function (x) {
-            x.m.reset(); x.m.axisOnPole(true); x.m.fadePole(0.3, 0); x.m.showYellowNow(); x.m.yellow90(true);
-            var f = useFit(x.m, '1.2-hero', PROFILE, ['neutral', 'chinDown'], { head: true, yline: true, pole: true }, { x: 0.8, top: 0.7, bottom: -0.62 }, 0);
+            x.m.reset(); x.m.axisOnPole(true); x.m.fadePole(0.3, 0); x.m.showYellowNow(); x.m.yellow90(true); x.m.yellowOnTop(true); flex12(x);
+            var f = useFit(x.m, '1.2-hero', PROFILE, FLEX_POSES, { head: true, yline: true, pole: true }, { x: 0.8, top: 0.7, bottom: -0.62 }, 0);
             S.frameTo({ push: f.push * 1.06, lift: f.lift, side: f.side }, 0);
             return S.setView(PROFILE, 600).then(function () { return wait(900); })
-              .then(function () { if (!x.alive()) return; S.frameTo(f, 7000, true); return x.m.pose('chinDown'); });
+              .then(function () { if (!x.alive()) return; S.frameTo(f, 7000, true); return !x.touched && x.m.pose('chinDown'); });
           } },
         { name: 'end', line: L12.end, dip: true, layoutGroup: 'end',
           // change 6: yellow dotted line + 90 tag, head turns by itself and answers touch like 1.1
           enter: function (x) {
-            base12(x.m, { pole: true, yellow: true }); touch12(x);
-            return S.setView(PROFILE, 0).then(function () { return wait(500); }).then(function () { spin12(x); });
+            base12(x.m, { pole: true, yellow: true }); x.m.fadePole(0.5, 0); x.m.yellowOnTop(true); flex12(x);
+            return S.setView(PROFILE, 0);
           } }
       ];
     }
