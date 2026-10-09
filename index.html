@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="ch1-g">
+<html lang="en" data-build="ch1-h">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -4333,12 +4333,13 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   /* ---------------- pointer: drag rotates, still tap = tap ---------------- */
   Stage.setInteraction = function (opts) {
     interaction = { mode: (opts && opts.mode) || 'none', onTap: opts && opts.onTap || null,
-      onFirstTouch: opts && opts.onFirstTouch || null, onFlex: opts && opts.onFlex || null };
+      onFirstTouch: opts && opts.onFirstTouch || null, onFlex: opts && opts.onFlex || null, onDown: opts && opts.onDown || null };
     if (canvas) canvas.style.cursor = interaction.mode === 'none' ? 'default' : 'grab';
   };
   function bindPointer() {
     canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', function (e) {
+      if (interaction.mode === 'flex' && interaction.onDown) interaction.onDown();   // ch1-h: finger down holds a scripted move at once
       if (interaction.onFirstTouch) { var f = interaction.onFirstTouch; interaction.onFirstTouch = null; f(); }
       if (interaction.mode === 'none' && !interaction.onTap) return;
       viewTweenToken++; // the stylist takes over from any easing
@@ -5652,6 +5653,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       skinOpacity: function () { return refs.skinOpacity; },
       skinMatOpacity: function () { return matsOf(refs.skinMeshes[0])[0].opacity; },
       pose: function (key, dur) { return animateNeckTo(key, dur); },
+      flexHold: function () { if (neckAnim && neckAnim.resolve) { var r = neckAnim.resolve; neckAnim = null; r(); } },
       flexBy: function (df) { setFlex(flexValue() + df); Stage.kick(); },
       flexSet: function (f) { setFlex(f); Stage.kick(); },
       flexValue: flexValue,
@@ -5715,13 +5717,13 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
 </script>
 <script>
-/* MAhD learning app: Haircut by Design Fundamentals, Chapter 1. Build ch1-g.
+/* MAhD learning app: Haircut by Design Fundamentals, Chapter 1. Build ch1-h.
  * Screens, lesson steps, Chapter 1 test (100% to pass, retry only the missed ones), saved progress.
  * No game parts (no streaks, points, rewards), no sounds, no confetti.
  */
 (function () {
   'use strict';
-  var BUILD = 'ch1-g';
+  var BUILD = 'ch1-h';
   document.documentElement.setAttribute('data-build', BUILD);
   console.info('[mahd] build ' + BUILD);
 
@@ -6269,7 +6271,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       // the head is (x.touched stops the rest of that script).
       function flex12(x) {
         S.setSpin(false);
-        S.setInteraction({ mode: 'flex', onFirstTouch: function () { x.touched = true; }, onFlex: function (dx) { if (x.alive()) x.m.flexBy(-dx / FLEX_PX); } });
+        S.setInteraction({ mode: 'flex', onFirstTouch: function () { x.touched = true; }, onDown: function () { if (x.alive()) x.m.flexHold(); }, onFlex: function (dx) { if (x.alive()) x.m.flexBy(-dx / FLEX_PX); } });
       }
       return [
         { name: 'intro', line: L12.intro, textOnly: true,
