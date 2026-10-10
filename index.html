@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="ch1-h">
+<html lang="en" data-build="ch1-j">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -212,6 +212,39 @@ button:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
 }
 .ans-measure { left: 50%; right: auto; width: var(--w); margin-left: calc(var(--w) / -2); }
 
+/* ch1-i (1.3): two flex sliders under the 3D, above Continue. Plain: white track with a zero mark, 44 px thumb, no words. */
+.flexsliders {
+  position: absolute; left: 50%; bottom: calc(var(--sb) + 16px + 56px + 10px);
+  width: var(--w); margin-left: calc(var(--w) / -2); height: 96px;
+  display: none; flex-direction: column; justify-content: space-between;
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.flexsliders.on { display: flex; }
+.flexsliders.show { opacity: 1; }
+.flexslider {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; margin: 0; padding: 0;
+  background: transparent; touch-action: pan-y; outline: none; -webkit-tap-highlight-color: transparent;
+}
+.flexslider::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, transparent calc(50% - 1px), #000 calc(50% - 1px), #000 calc(50% + 1px), transparent calc(50% + 1px)), rgba(255,255,255,0.45);
+}
+.flexslider::-moz-range-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, transparent calc(50% - 1px), #000 calc(50% - 1px), #000 calc(50% + 1px), transparent calc(50% + 1px)), rgba(255,255,255,0.45);
+}
+.flexslider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 44px; height: 44px; margin-top: -20px; border: 0; border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0 8px, #fff 9px);
+}
+.flexslider::-moz-range-thumb { width: 44px; height: 44px; border: 0; border-radius: 50%; background: radial-gradient(circle, var(--accent) 0 8px, #fff 9px); }
+.flexslider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255,255,255,0.6); }
+
+/* ch1-j: 1.3 screen 6 only: the grey stage. The side fades are wider so nothing grey is lit within 20 px of the screen sides. */
+#stage.greybg .stage-fade.left, #stage.greybg .stage-fade.right { width: 56px; }
+/* ch1-j: the thumbs fade out quickly (they must be gone before the stage is fully black while a new head loads) and fade in with the head */
+.flexsliders:not(.show) { transition-duration: 0.15s; }
+
 </style>
 </head>
 <body>
@@ -265,6 +298,10 @@ button:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
       </div>
     </div>
     <div class="bottom" data-ui>
+      <div class="flexsliders" id="flexsliders" aria-hidden="true">
+        <input class="flexslider" id="flex-ud" type="range" min="-100" max="100" step="1" value="0" tabindex="-1">
+        <input class="flexslider" id="flex-rl" type="range" min="-100" max="100" step="1" value="0" tabindex="-1">
+      </div>
       <div class="answers" id="answers" role="group"></div>
       <div class="yesno" id="yesno" role="group"></div>
       <button class="primary" id="lesson-primary" type="button"></button>
@@ -3933,7 +3970,12 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     },
 
     l13: {
-      intro: 'Now we also have invisible planes: still X, Y, and Z axis.',
+      intro: 'Now we also have invisible planes.',   // ch1-j (Michael): the old extra words are gone from every 1.3 screen that shows this sentence
+      // ch1-i (Michael round 3): the planes screen; four new screens
+      planes: 'Now we also have invisible planes.',
+      vOut: '90\u00B0 out from the Invisible Vertical Plane',
+      hUp: '90\u00B0 up from the Invisible Horizontal Plane',
+      hDown: '90\u00B0 down from the Invisible Horizontal Plane',
       keyPoint: 'Visualize these planes and lines, so when we build the haircut, we have a reference point of a starting point.',
       hero: HERO_LINE,
       end: 'Time to test what you know.'
@@ -4099,6 +4141,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     // ch1-d: the 1.3y rig (amb 0.78 + key 0.7 on a near-white lilac skin) clipped 42-60% of head pixels to pure white.
     // The lines head now uses the bones rig and a matte grey skin (set in setupLines), so it reads as a shaded form.
     lightRigs.lines = makeRig(0.62, [[2, 3, 4, 0.7], [-3, 1, -2, 0.22]]);
+    ['pvblue', 'pvgreen', 'phyellow'].forEach(function (k) { lightRigs[k] = makeRig(0.62, [[2, 3, 4, 0.7], [-3, 1, -2, 0.22]]); });   // ch1-i: same rig as the lines head
 
     resize();
     if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(hostEl);
@@ -4389,7 +4432,11 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     }
     return fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); });
   }
-  var MODEL_URLS = { bones: 'assets/models/Bones_of_the_Head.glb', lines: 'assets/models/head.glb' };
+  var MODEL_URLS = { bones: 'assets/models/Bones_of_the_Head.glb', lines: 'assets/models/head.glb',
+    // ch1-i (Michael round 3, 1.3): the three plane heads, byte-identical to his files (verified by sha256 in tools/build_dist.py)
+    pvblue: 'assets/models/Plane_Head_Vertical_Blue.glb', pvgreen: 'assets/models/Plane_Head_Vertical_Green.glb',
+    phyellow: 'assets/models/Plane_Head_Horizontal_Yellow.glb' };
+  var PLANE_HEAD_KEYS = { pvblue: 1, pvgreen: 1, phyellow: 1 };
 
   Stage.load = function (key) {
     if (!renderer) return Promise.reject(new Error('no-webgl'));
@@ -4399,7 +4446,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       return new Promise(function (resolve, reject) {
         var loader = new THREE.GLTFLoader();
         loader.parse(buf, '', function (gltf) {
-          var setup = key === 'bones' ? setupBones : setupLines;
+          var setup = key === 'bones' ? setupBones : PLANE_HEAD_KEYS[key] ? function (g) { return setupPlaneHead(g, key); } : setupLines;
           Promise.resolve(setup(gltf)).then(function (m) {
             m.root.visible = false;
             models[key] = m;
@@ -4426,6 +4473,15 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     Stage.kick();
   };
   Stage.current = function () { return currentKey; };
+  // ch1-j: a grey stage background for one screen (1.3 screen 6); null = pure black again. Called while the stage is faded out.
+  Stage.setBackground = function (hex) {
+    if (!scene) return;
+    scene.background = new THREE.Color(hex == null ? 0x000000 : hex);
+    var el = document.getElementById('stage'); if (el) el.classList.toggle('greybg', hex != null);
+    bgHex = hex; Stage.kick();
+  };
+  var bgHex = null;
+  Stage.background = function () { return bgHex; };
   Stage.renderNow = function () { if (renderer) { renderer.render(scene, camera); } };
 
   function fitDistance(height, width, fill) {
@@ -4922,6 +4978,17 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       root.updateMatrixWorld(true);
     }
     function flexValue() { return refs.morph ? pitchToFlex(refs.morph.pitch) : 0; }
+    // ch1-i (1.3): two-way flex for the sliders: f = +1 full Down .. -1 full Up (as above), r = +1 full tilt right .. -1 full tilt left
+    function setFlex2(f, r) {
+      if (!refs.morph) return;
+      if (neckAnim && neckAnim.resolve) { var rs = neckAnim.resolve; neckAnim = null; rs(); }
+      var p = flexToPitch(clamp(f, -1, 1)), rl = clamp(r, -1, 1) * ROLL_FULL, bs = CHAIN_SHARES[0], ts = 1 - bs;
+      applyCpuNeckMorph(p, 0, rl);
+      if (refs.neckBone && neckNeutralQ) refs.neckBone.quaternion.copy(neckNeutralQ).multiply(eulerQuat(p * bs, 0, rl * bs));
+      if (refs.neckBoneTip && tipNeutralQ) refs.neckBoneTip.quaternion.copy(tipNeutralQ).multiply(eulerQuat(p * ts, 0, rl * ts));
+      poseKey = 'flex';
+      root.updateMatrixWorld(true);
+    }
 
     function attach(child, parent) {
       parent.updateWorldMatrix(true, false); child.updateWorldMatrix(true, false);
@@ -5657,6 +5724,9 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       flexBy: function (df) { setFlex(flexValue() + df); Stage.kick(); },
       flexSet: function (f) { setFlex(f); Stage.kick(); },
       flexValue: flexValue,
+      flexInfo: function () { root.updateMatrixWorld(true); return { morph: { pitchDeg: +(refs.morph.pitch / DEG).toFixed(3), rollDeg: +((refs.morph.roll || 0) / DEG).toFixed(3) }, planeWorld: refs.planes[0].getWorldPosition(new THREE.Vector3()).toArray().map(function (v) { return +v.toFixed(4); }) }; },
+      flex2: function (f, r) { setFlex2(f, r); Stage.kick(); },
+      flexValues: function () { return refs.morph ? { f: pitchToFlex(refs.morph.pitch), r: (refs.morph.roll || 0) / ROLL_FULL } : { f: 0, r: 0 }; },
       poseNow: function (key) { setPoseImmediate(key); Stage.kick(); },
       poseKey: function () { return poseKey; },
       fadePole: function (to, dur) { var from = refs.verticalPole ? matsOf(refs.verticalPole)[0].opacity * (refs.verticalPole.visible ? 1 : 0) : 0; return fadeValue('pole', from, to * refs.poleOrigOpacity, dur, setPoleOpacity); },
@@ -5703,6 +5773,275 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     return api;
   }
 
+
+  /* =================================================================
+   * PLANE HEADS (ch1-i, 1.3): Michael's three GLBs (blue vertical plane, green vertical plane, yellow horizontal plane).
+   * Each file is a head (same neck bones as head.glb), one plane ("Cube") and a few hundred hair-strand cylinders.
+   * The head is flexed with the same CPU neck morph as the lines head (pitch = up / down, roll = right / left); the plane and
+   * the strands are cemented to the skull pivot, so they move with the head. The strands are merged into one mesh at load
+   * (same material, same shape, no change to the file) so a phone draws one object instead of several hundred.
+   * ================================================================= */
+  var PLANE_OPACITY = 0.7;      // ch1-i: 30% see-through
+  var ROLL_FULL = 40 * DEG;     // right / left slider, same as the tilt poses
+  function setupPlaneHead(gltf, key) {
+    var model = gltf.scene;
+    var root = new THREE.Group(); root.name = 'PlaneHeadRoot_' + key;
+    root.add(model);
+    headGroup.add(root);
+    var refs = { planes: [], strands: [], skinMeshes: [], eyeMeshes: [], neckBone: null, neckBoneTip: null, scalpRoot: null,
+      skullPivot: null, morph: null, strandMesh: null };
+    var neckNeutralQ = null, tipNeutralQ = null;
+    model.traverse(function (obj) {
+      var n = normalizeName(obj.name);
+      if (n === 'neckbone') refs.neckBone = obj;
+      if (n === 'neckbone001') refs.neckBoneTip = obj;
+      if (n === 'scalp') refs.scalpRoot = obj;
+      if (!obj.isMesh) return;
+      var mj = matsOf(obj).map(function (m) { return normalizeName(m && m.name); }).join('|');
+      if (mj.indexOf('hair') === 0) refs.strands.push(obj);
+      else if (mj.indexOf('eyes') === 0) refs.eyeMeshes.push(obj);
+      else if (mj.indexOf('head') === 0) refs.skinMeshes.push(obj);
+      else refs.planes.push(obj);   // "Vertical Plane 1" (blue), "Verrtical Plane 2" (green), "Material" (yellow)
+    });
+    if (refs.scalpRoot) refs.scalpRoot.visible = false;
+    refs.skinMeshes.forEach(function (m) {
+      matsOf(m).forEach(function (mm) {
+        if (!mm || !mm.color) return;
+        mm.color.setHex(LINES_SKIN_GREY); mm.roughness = 1.0; mm.metalness = 0.0; mm.needsUpdate = true;
+      });
+    });
+    var skin = refs.skinMeshes[0];
+    var skinBox = new THREE.Box3().setFromObject(skin);
+    var center = skinBox.getCenter(new THREE.Vector3());
+    var skinSize = skinBox.getSize(new THREE.Vector3());
+    model.position.sub(center);
+    model.updateMatrixWorld(true);
+    if (refs.neckBone) neckNeutralQ = refs.neckBone.quaternion.clone();
+    if (refs.neckBoneTip) tipNeutralQ = refs.neckBoneTip.quaternion.clone();
+
+    // --- CPU neck morph (same maths as the lines head) ---
+    var morph = null, skullPivot = null;
+    (function () {
+      var mesh = skin;
+      mesh.updateWorldMatrix(true, false); refs.neckBone.updateWorldMatrix(true, false); refs.neckBoneTip.updateWorldMatrix(true, false);
+      var bw = new THREE.Vector3(), tw = new THREE.Vector3();
+      refs.neckBone.getWorldPosition(bw); refs.neckBoneTip.getWorldPosition(tw);
+      var inv = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
+      var bl = bw.clone().applyMatrix4(inv), tl = tw.clone().applyMatrix4(inv);
+      var cx = (bl.x + tl.x) * 0.5, cz = (bl.z + tl.z) * 0.5, yBase = bl.y, yTip = tl.y, ySpan = Math.max(1e-4, yTip - yBase);
+      var g = mesh.geometry; if (!g.attributes.normal) g.computeVertexNormals();
+      var joints = []; for (var i = 0; i < CHAIN_COUNT; i++) joints.push(new THREE.Vector3(cx, yBase + ySpan * (i / (CHAIN_COUNT - 1)), cz));
+      skullPivot = new THREE.Object3D(); skullPivot.name = 'SkullPivot';
+      skullPivot.position.set(cx, yTip, cz);
+      mesh.parent.add(skullPivot);
+      refs.skullPivot = skullPivot;
+      morph = refs.morph = { mesh: mesh, restPos: new Float32Array(g.attributes.position.array), restNrm: new Float32Array(g.attributes.normal.array),
+        joints: joints, yBase: yBase, yTip: yTip, ySpan: ySpan, pitch: 0, yaw: 0, roll: 0 };
+    })();
+    var _q = new THREE.Quaternion(), _dq = new THREE.Quaternion(), _e = new THREE.Euler(0, 0, 0, 'XYZ');
+    var _t0 = new THREE.Vector3(), _t1 = new THREE.Vector3(), _n0 = new THREE.Vector3(), _n1 = new THREE.Vector3(), _ro = new THREE.Vector3();
+    var jointDef = [], cumQ = [];
+    for (var ji = 0; ji < CHAIN_COUNT; ji++) { jointDef.push(new THREE.Vector3()); cumQ.push(new THREE.Quaternion()); }
+    function applyMorph(pitch, yaw, roll) {
+      var m = morph; m.pitch = pitch; m.yaw = yaw; m.roll = roll || 0;
+      var posAttr = m.mesh.geometry.attributes.position, nrmAttr = m.mesh.geometry.attributes.normal;
+      var P = posAttr.array, Nn = nrmAttr.array, rp = m.restPos, rn = m.restNrm, joints = m.joints, N = CHAIN_COUNT;
+      jointDef[0].copy(joints[0]); _q.identity();
+      for (var j = 0; j < N; j++) {
+        _e.set(pitch * CHAIN_SHARES[j], yaw * CHAIN_SHARES[j], (roll || 0) * CHAIN_SHARES[j], 'XYZ');
+        _dq.setFromEuler(_e); _q.multiply(_dq); cumQ[j].copy(_q);
+        if (j < N - 1) { _ro.subVectors(joints[j + 1], joints[j]).applyQuaternion(_q); jointDef[j + 1].copy(jointDef[j]).add(_ro); }
+      }
+      for (var i = 0, cnt = posAttr.count; i < cnt; i++) {
+        var i3 = i * 3, rx = rp[i3], ry = rp[i3 + 1], rz = rp[i3 + 2];
+        var h = ry <= m.yBase ? 0 : (ry >= m.yTip ? 1 : (ry - m.yBase) / m.ySpan);
+        if (h <= 0.0001) { P[i3] = rx; P[i3 + 1] = ry; P[i3 + 2] = rz; Nn[i3] = rn[i3]; Nn[i3 + 1] = rn[i3 + 1]; Nn[i3 + 2] = rn[i3 + 2]; continue; }
+        var he = h * h * (3 - 2 * h), f = he * (N - 1);
+        var a0 = Math.min(N - 2, Math.floor(f)), a1 = a0 + 1, w1 = h >= 1 ? 1 : (f - a0), w0 = 1 - w1;
+        _t0.set(rx, ry, rz).sub(joints[a0]).applyQuaternion(cumQ[a0]).add(jointDef[a0]);
+        _t1.set(rx, ry, rz).sub(joints[a1]).applyQuaternion(cumQ[a1]).add(jointDef[a1]);
+        _t0.multiplyScalar(w0).add(_t1.multiplyScalar(w1));
+        _n0.set(rn[i3], rn[i3 + 1], rn[i3 + 2]).applyQuaternion(cumQ[a0]);
+        _n1.set(rn[i3], rn[i3 + 1], rn[i3 + 2]).applyQuaternion(cumQ[a1]);
+        _n0.multiplyScalar(w0).add(_n1.multiplyScalar(w1)).normalize();
+        P[i3] = _t0.x; P[i3 + 1] = _t0.y; P[i3 + 2] = _t0.z; Nn[i3] = _n0.x; Nn[i3 + 1] = _n0.y; Nn[i3 + 2] = _n0.z;
+      }
+      posAttr.needsUpdate = true; nrmAttr.needsUpdate = true;
+      m.mesh.geometry.computeBoundingSphere();
+      skullPivot.quaternion.copy(cumQ[N - 1]); skullPivot.position.copy(jointDef[N - 1]);
+    }
+    function attach(child, parent) {
+      parent.updateWorldMatrix(true, false); child.updateWorldMatrix(true, false);
+      var inv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+      var local = new THREE.Matrix4().multiplyMatrices(inv, child.matrixWorld);
+      if (child.parent) child.parent.remove(child);
+      parent.add(child);
+      local.decompose(child.position, child.quaternion, child.scale);
+      child.updateMatrix();
+    }
+    function eq(p, y, r) { _e.set(p || 0, y || 0, r || 0, 'XYZ'); return new THREE.Quaternion().setFromEuler(_e); }
+    // f: +1 full Down .. -1 full Up (same range as the 1.2 flex); r: +1 full tilt right .. -1 full tilt left
+    var flexF = 0, flexR = 0;
+    function setFlex2(f, r) {
+      flexF = clamp(f, -1, 1); flexR = clamp(r, -1, 1);
+      var p = flexF >= 0 ? flexF * POSES.chinDown.pitch : flexF * -POSES.chinUp.pitch, rl = flexR * ROLL_FULL, bs = CHAIN_SHARES[0], ts = 1 - bs;
+      applyMorph(p, 0, rl);
+      if (refs.neckBone && neckNeutralQ) refs.neckBone.quaternion.copy(neckNeutralQ).multiply(eq(p * bs, 0, rl * bs));
+      if (refs.neckBoneTip && tipNeutralQ) refs.neckBoneTip.quaternion.copy(tipNeutralQ).multiply(eq(p * ts, 0, rl * ts));
+      root.updateMatrixWorld(true);
+    }
+    applyMorph(0, 0, 0);
+    model.updateMatrixWorld(true);
+
+    // eyes and the plane follow the skull; the strands are merged into one mesh that follows the skull
+    refs.eyeMeshes.forEach(function (m) { if (!m.isSkinnedMesh) attach(m, skullPivot); });
+    refs.planes.forEach(function (m) { attach(m, skullPivot); });
+    (function mergeStrands() {
+      if (!refs.strands.length) return;
+      skullPivot.updateMatrixWorld(true);
+      var inv = new THREE.Matrix4().copy(skullPivot.matrixWorld).invert(), tmp = new THREE.Matrix4();
+      var nv = 0, ni = 0;
+      refs.strands.forEach(function (m) { nv += m.geometry.attributes.position.count; ni += m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count; });
+      var P = new Float32Array(nv * 3), Nn = new Float32Array(nv * 3), I = new Uint32Array(ni), vo = 0, io = 0;
+      var v = new THREE.Vector3(), nm = new THREE.Matrix3();
+      var sinfo = [];
+      refs.strands.forEach(function (m) {
+        m.updateWorldMatrix(true, false);
+        tmp.multiplyMatrices(inv, m.matrixWorld); nm.getNormalMatrix(tmp);
+        var rec = { v0: vo, i0: io, minX: 1e9, maxX: -1e9, minZ: 1e9, maxZ: -1e9 };
+        var g = m.geometry, pa = g.attributes.position, na = g.attributes.normal;
+        for (var i = 0; i < pa.count; i++) {
+          v.fromBufferAttribute(pa, i).applyMatrix4(tmp); P[(vo + i) * 3] = v.x; P[(vo + i) * 3 + 1] = v.y; P[(vo + i) * 3 + 2] = v.z;
+          rec.minX = Math.min(rec.minX, v.x); rec.maxX = Math.max(rec.maxX, v.x); rec.minZ = Math.min(rec.minZ, v.z); rec.maxZ = Math.max(rec.maxZ, v.z);
+          if (na) { v.fromBufferAttribute(na, i).applyMatrix3(nm).normalize(); Nn[(vo + i) * 3] = v.x; Nn[(vo + i) * 3 + 1] = v.y; Nn[(vo + i) * 3 + 2] = v.z; }
+        }
+        if (g.index) for (var k = 0; k < g.index.count; k++) I[io++] = g.index.getX(k) + vo; else for (var k2 = 0; k2 < pa.count; k2++) I[io++] = vo + k2;
+        rec.vn = pa.count; rec.iN = io - rec.i0; rec.cx = (rec.minX + rec.maxX) / 2; rec.cz = (rec.minZ + rec.maxZ) / 2; sinfo.push(rec);
+        vo += pa.count;
+      });
+      refs.strandData = { P: P, N: Nn, I: I, info: sinfo };
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(Nn, 3)); geo.setIndex(new THREE.BufferAttribute(I, 1));
+      geo.computeBoundingBox(); geo.computeBoundingSphere();
+      var mat = matsOf(refs.strands[0])[0];
+      var merged = new THREE.Mesh(geo, mat); merged.name = 'StrandsMerged'; merged.frustumCulled = false;
+      refs.strands.forEach(function (m) { if (m.parent) m.parent.remove(m); m.geometry.dispose(); });
+      skullPivot.add(merged); refs.strandMesh = merged;
+    })();
+    // planes: 30% see-through, seen from both sides, never writing depth (so the head and the strands show through)
+    function setPlaneLook(op) {
+      refs.planes.forEach(function (p) { matsOf(p).forEach(function (m) { m.transparent = op < 0.999; m.opacity = op; m.depthWrite = op >= 0.999; m.side = THREE.DoubleSide; m.needsUpdate = true; }); });
+    }
+    setPlaneLook(PLANE_OPACITY);
+    refs.planes.forEach(function (p) { p.renderOrder = 3; });
+    model.updateMatrixWorld(true);
+
+    // ch1-j (Michael, confirmed): screen 6 shows the hair as two curtains at the SIDES of the face, hanging DOWN from the yellow plane
+    // past the ears (his Blender picture). Same strands from a.glb, split by position into a left and a right group, flipped about the
+    // plane, shortened and moved out to the ears by code; both groups are children of the skull pivot, so they move with the head.
+    var CURT = { xMin: 1.9, zMin: -1.8, zMax: 2.6, shift: 1.4, len: 0.72 };   // strands with |x| >= xMin and z in range; shift = move outward; len = share of the strand length kept (scale)
+    var curtains = null, curtainsOn = false;
+    function planeLocalY() { var p = refs.planes[0]; if (!p.geometry.boundingBox) p.geometry.computeBoundingBox(); p.updateMatrix(); return p.geometry.boundingBox.getCenter(new THREE.Vector3()).applyMatrix4(p.matrix).y; }
+    function buildCurtains() {
+      var D = refs.strandData, mat = refs.strandMesh.material, y0 = planeLocalY(), out = [];
+      [-1, 1].forEach(function (side) {
+        var sel = D.info.filter(function (r) { return side * r.cx >= CURT.xMin && r.cz >= CURT.zMin && r.cz <= CURT.zMax; });
+        var nv = 0, ni = 0; sel.forEach(function (r) { nv += r.vn; ni += r.iN; });
+        var P = new Float32Array(nv * 3), N = new Float32Array(nv * 3), I = new Uint32Array(ni), vo = 0, io = 0;
+        sel.forEach(function (r) {
+          for (var k = 0; k < r.vn * 3; k++) { P[vo * 3 + k] = D.P[r.v0 * 3 + k]; N[vo * 3 + k] = D.N[r.v0 * 3 + k]; }
+          for (var j = 0; j < r.iN; j++) I[io + j] = D.I[r.i0 + j] - r.v0 + vo;
+          vo += r.vn; io += r.iN;
+        });
+        var g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.BufferAttribute(N, 3)); g.setIndex(new THREE.BufferAttribute(I, 1));
+        g.computeBoundingBox(); g.computeBoundingSphere();
+        var m = new THREE.Mesh(g, mat); m.name = side < 0 ? 'CurtainLeft' : 'CurtainRight'; m.frustumCulled = false; m.visible = false;
+        m.userData.side = side < 0 ? 'left' : 'right'; m.userData.count = sel.length;
+        // flip about the plane (y' = y0 - k (y - y0)), keep the first CURT.len of the length, and move out to the ears
+        var k = CURT.len; m.scale.set(1, -k, 1); m.position.set(side * CURT.shift, y0 * (1 + k), 0); m.updateMatrix();
+        skullPivot.add(m); out.push(m);
+      });
+      return out;
+    }
+    function setCurtains(on) {
+      curtainsOn = !!on; if (!refs.strandMesh) return;
+      if (curtainsOn && !curtains) curtains = buildCurtains();
+      refs.strandMesh.visible = !curtainsOn;
+      if (curtains) curtains.forEach(function (m) { m.visible = curtainsOn; });
+      root.updateMatrixWorld(true);
+    }
+    var earXc = null;
+    function earX() {
+      if (earXc == null) { var y0 = planeLocalY(), rp = morph.restPos, mx = 0, oy = skullPivot.position.y; for (var i = 0; i < rp.length; i += 3) { var y = rp[i + 1] - oy; if (y > y0 - 2.5 && y < y0 + 1) mx = Math.max(mx, Math.abs(rp[i])); } earXc = mx; }
+      return earXc;
+    }
+    function strandInfo() {
+      var y0 = planeLocalY();
+      if (!curtainsOn) { var b = refs.strandMesh.geometry.boundingBox, c = (b.min.y + b.max.y) / 2; return { mode: 'all', side: c > y0 ? 'above' : 'below', planeY: +y0.toFixed(3) }; }
+      return { mode: 'curtains', planeY: +y0.toFixed(3), earX: +earX().toFixed(3), groups: curtains.map(function (m) {
+        var b = m.geometry.boundingBox.clone().applyMatrix4(m.matrix); return { side: m.userData.side, n: m.userData.count, x: [+b.min.x.toFixed(3), +b.max.x.toFixed(3)], y: [+b.min.y.toFixed(3), +b.max.y.toFixed(3)], z: [+b.min.z.toFixed(3), +b.max.z.toFixed(3)], visible: m.visible }; }) };
+    }
+    function planeColorHex(p) { return '#' + matsOf(p)[0].color.clone().convertLinearToSRGB().getHexString().toUpperCase(); }
+    function fitPoints(what) {
+      var pts = [], sv = new THREE.Vector3();
+      root.updateMatrixWorld(true);
+      refs.planes.forEach(function (p) {
+        if (!p.geometry.boundingBox) p.geometry.computeBoundingBox();
+        var b = p.geometry.boundingBox;
+        for (var i = 0; i < 8; i++) pts.push(new THREE.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).applyMatrix4(p.matrixWorld));
+      });
+      [refs.strandMesh].concat(curtains || []).forEach(function (sm) { if (!sm || !sm.visible) return; var sb = sm.geometry.boundingBox; for (var j = 0; j < 8; j++) pts.push(new THREE.Vector3(j & 1 ? sb.max.x : sb.min.x, j & 2 ? sb.max.y : sb.min.y, j & 4 ? sb.max.z : sb.min.z).applyMatrix4(sm.matrixWorld)); });
+      var sp = skin.geometry.attributes.position; skin.updateMatrixWorld(true);
+      for (var si = 0; si < sp.count; si += 29) pts.push(sv.fromBufferAttribute(sp, si).applyMatrix4(skin.matrixWorld).clone());
+      return pts;
+    }
+    function fitFrame(views, poses, what, lim) {
+      lim = lim || {};
+      var xl = lim.x || 0.8, yt = lim.top != null ? lim.top : 0.72, yb = lim.bottom != null ? lim.bottom : -0.6;
+      var hg = root.parent, keepRot = hg.rotation.clone(), keepF = flexF, keepR = flexR, keep = { push: frame.push, lift: frame.lift, side: frame.side };
+      var pts = [];
+      views.forEach(function (vw) {
+        (vw.flex || [[0, 0]]).forEach(function (fr) {
+          setFlex2(fr[0], fr[1]); hg.rotation.set(vw.pitch || 0, vw.yaw, 0); hg.updateMatrixWorld(true);
+          pts = pts.concat(fitPoints());
+        });
+      });
+      setFlex2(keepF, keepR); hg.rotation.copy(keepRot); hg.updateMatrixWorld(true);
+      var f = { push: 1, lift: 0, side: 0 }, vfov = camera.fov * DEG;
+      for (var it = 0; it < 6; it++) {
+        frame.push = f.push; frame.lift = f.lift; frame.side = f.side; applyFrame(); camera.updateMatrixWorld(true);
+        var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        pts.forEach(function (w) { var q = w.clone().project(camera); minX = Math.min(minX, q.x); maxX = Math.max(maxX, q.x); minY = Math.min(minY, q.y); maxY = Math.max(maxY, q.y); });
+        var sc = Math.max((maxX - minX) / (2 * xl), (maxY - minY) / (yt - yb)), d = frame.dist * f.push;
+        f.lift += ((maxY + minY) / 2 - (yt + yb) / 2) * Math.tan(vfov / 2) * d; f.side += ((maxX + minX) / 2) / 2; f.push *= sc;
+      }
+      frame.push = keep.push; frame.lift = keep.lift; frame.side = keep.side; applyFrame();
+      return { push: +f.push.toFixed(4), lift: +f.lift.toFixed(4), side: +f.side.toFixed(4) };
+    }
+    var api = {
+      key: key, root: root, homeDist: 0, homeY: 0, refs: refs, isPlaneHead: true,
+      fit: function () { api.homeDist = fitDistance(skinSize.y * 1.55, skinSize.z * 1.9, 1.0); },
+      reset: function () { setCurtains(false); setFlex2(0, 0); Stage.kick(); },
+      curtains: function (on) { setCurtains(on); Stage.kick(); },
+      flex2: function (f, r) { setFlex2(f, r); Stage.kick(); },
+      flexValues: function () { return { f: flexF, r: flexR }; },
+      fitFrame: fitFrame,
+      info: function () {
+        root.updateMatrixWorld(true);
+        return { key: key, planes: refs.planes.map(function (p) { var mm = matsOf(p)[0]; return { name: p.name, material: mm.name, hex: planeColorHex(p), opacity: +mm.opacity.toFixed(3), transparent: mm.transparent, depthWrite: mm.depthWrite, side: mm.side }; }),
+          morph: { pitchDeg: +(morph.pitch / DEG).toFixed(3), rollDeg: +(morph.roll / DEG).toFixed(3) },
+          planeWorld: refs.planes[0].getWorldPosition(new THREE.Vector3()).toArray().map(function (v) { return +v.toFixed(4); }),
+          strands: strandInfo(),
+          strandMeshes: refs.strandMesh ? 1 : 0, strandTris: refs.strandMesh ? refs.strandMesh.geometry.index.count / 3 : 0, flex: { f: flexF, r: flexR },
+          skinHex: '#' + matsOf(skin)[0].color.getHexString().toUpperCase() };
+      },
+      state: function () { return { flex: { f: flexF, r: flexR }, planeOpacity: matsOf(refs.planes[0])[0].opacity }; }
+    };
+    api.fit();
+    return api;
+  }
+
   Stage.refit = function () {
     Object.keys(models).forEach(function (k) { models[k].fit(); });
     if (currentKey) { frame.dist = models[currentKey].homeDist; applyFrame(); Stage.kick(); }
@@ -5717,13 +6056,13 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
 </script>
 <script>
-/* MAhD learning app: Haircut by Design Fundamentals, Chapter 1. Build ch1-h.
+/* MAhD learning app: Haircut by Design Fundamentals, Chapter 1. Build ch1-i.
  * Screens, lesson steps, Chapter 1 test (100% to pass, retry only the missed ones), saved progress.
  * No game parts (no streaks, points, rewards), no sounds, no confetti.
  */
 (function () {
   'use strict';
-  var BUILD = 'ch1-h';
+  var BUILD = 'ch1-j';
   document.documentElement.setAttribute('data-build', BUILD);
   console.info('[mahd] build ' + BUILD);
 
@@ -5757,7 +6096,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
   /* ---------------- saved progress ---------------- */
   // at = place in the first run of a lesson; replay = place while re-opening a Done lesson (Done never goes back).
-  function defaults() { return { v: 1, welcomed: false, done: {}, at: null, replay: null, test: null, warm: {}, l12n: 6 }; }
+  function defaults() { return { v: 1, welcomed: false, done: {}, at: null, replay: null, test: null, warm: {}, l12n: 6, l13n: 10 }; }
   function loadState() {
     try {
       var raw = localStorage.getItem(STORE);
@@ -5766,13 +6105,20 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       if (!s || s.v !== 1) return defaults();
       var d = defaults();
       // ch1-f: the 1.2 step-count marker must be read BEFORE the missing keys are filled in, or every old save looks new
-      var oldL12 = s.l12n !== 6;
+      var oldL12 = s.l12n !== 6, oldL13 = s.l13n !== 10;
       Object.keys(d).forEach(function (k) { if (s[k] === undefined) s[k] = d[k]; });
       if (s.at && s.done[s.at.id]) { s.replay = s.at; s.at = null; } // older saves (ch1-c) kept a replay in "at"
       // ch1-e: 1.2 went from 7 steps to 6 (Floor vs Head removed, it was step 5). Older saves past it move back one.
       if (oldL12) {
         [s.at, s.replay].forEach(function (pl) { if (pl && pl.id === '1.2' && pl.step >= 5) pl.step -= 1; });
         s.l12n = 6;
+      }
+      // ch1-i: 1.3 went from 7 steps to 10 (first screen removed, four new screens after the planes screen).
+      // Old step 0 (removed intro) and 1 (planes) -> 0, then the old steps 2..6 -> 5..9.
+      if (oldL13) {
+        var map13 = [0, 0, 5, 6, 7, 8, 9];
+        [s.at, s.replay].forEach(function (pl) { if (pl && pl.id === '1.3') pl.step = map13[Math.max(0, Math.min(6, pl.step | 0))]; });
+        s.l13n = 10;
       }
       return s;
     } catch (e) { return defaults(); }
@@ -5819,7 +6165,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   var screenTok = 0;
   function showScreen(name) {
     var prev = current.screen;
-    current.screen = name;
+    current.screen = name; if (name !== "lesson") { slidersOff(); setTimeout(function () { if (current.screen !== "lesson" && S.ok() && S.setBackground) S.setBackground(null); }, 800); }
     var my = ++screenTok;
     function apply() {
       Object.keys(screens).forEach(function (k) { screens[k].classList.toggle('on', k === name); });
@@ -5997,8 +6343,9 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     texts.forEach(function (t) { var b = document.createElement('div'); b.className = 'ans'; b.textContent = t; a.appendChild(b); });
     return a.getBoundingClientRect().height;
   }
-  function applyLayout(lines, bottom, answerTexts) {
-    lastLayout = [lines, bottom, answerTexts];
+  var SLIDER_ROOM = 106;   // ch1-i: two 44 px sliders + gaps, between the 3D and Continue
+  function applyLayout(lines, bottom, answerTexts, extraBottom) {
+    lastLayout = [lines, bottom, answerTexts, extraBottom];
     ensureMeasure();
     var root = document.documentElement, H = window.innerHeight;
     var short = H <= 720, gap = short ? 14 : 22;
@@ -6009,7 +6356,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     var sb = H - sbProbe.getBoundingClientRect().top;
     var bottomH = bottom === 'answers' ? Math.ceil(measureAnswers(answerTexts || [])) : 56;
     var top = Math.round(lzTop + textH + gap);
-    var bot = Math.round(sb + 16 + bottomH + gap);
+    var bot = Math.round(sb + 16 + bottomH + gap + (extraBottom || 0));
     var stageH = H - top - bot;
     root.style.setProperty('--lz-h', textH + 'px');
     root.style.setProperty('--stage-top', top + 'px');
@@ -6021,7 +6368,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     if (S.ok()) S.resize();
     return layoutInfo;
   }
-  window.addEventListener('resize', function () { if (lastLayout && current.screen === 'lesson') applyLayout(lastLayout[0], lastLayout[1], lastLayout[2]); });
+  window.addEventListener('resize', function () { if (lastLayout && current.screen === 'lesson') applyLayout(lastLayout[0], lastLayout[1], lastLayout[2], lastLayout[3]); });
   // ch1-e: steps can carry a layoutGroup; the room is sized for the tallest text in that group only (1.1 and 1.3 have
   // no groups, so they size exactly as before). Text-only steps have no 3D, so they never size the room.
   function lessonLayout(id, group) {
@@ -6032,7 +6379,8 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       if ((st.layoutGroup || null) === group) lines.push([st.label || '', st.line || '', st.small || '', st.kind]);
       else if (group === null && st.sizeProxy) lines.push([st.label || '', st.sizeProxy, st.small || '', st.kind]);
     });
-    applyLayout(lines, 'primary');
+    var sl = lessonSteps(id).some(function (st) { return st.sliders && (st.layoutGroup || null) === group; });
+    applyLayout(lines, 'primary', null, sl ? SLIDER_ROOM : 0);
     current.layoutGroup = group;
   }
   // Framing that keeps the listed parts fully inside the bright part of the stage, cached per stage size.
@@ -6055,8 +6403,10 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   // Switch the stage to a model: soft fade out/in only when the model changes.
   function useModel(key, tok) {
     if (S.current() === key && S.model(key)) return Promise.resolve(S.model(key));
-    var slow = setTimeout(function () { if (alive(tok)) { stageNote.textContent = U.loading; stageNote.classList.add('on'); } }, 400);
-    var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 10000); });
+    // ch1-i: the plane heads are separate files fetched on demand; while one loads the stage stays calm black (no note, no layout change)
+    var plane = /^p[vh]/.test(key);
+    var slow = plane ? 0 : setTimeout(function () { if (alive(tok)) { stageNote.textContent = U.loading; stageNote.classList.add('on'); } }, 400);
+    var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, plane ? 45000 : 10000); });
     var hadModel = !!S.current();
     stageEl.classList.add('dim');
     return Promise.race([loadModel(key), timeout]).then(function (m) {
@@ -6202,6 +6552,53 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
    * ================================================================= */
   var L11 = C.l11, L12 = C.l12, L13 = C.l13;
 
+  /* ---------------- ch1-i (1.3): two flex sliders ---------------- */
+  var BG_PICTURE = 0x434343;   // ch1-j: the dark grey of Michael's Blender picture for screen 6 (sampled: rgb 63-70)
+  var PLANE_OP = 0.7;   // 30% see-through (was 1, fully opaque)
+  var slidersEl = $('flexsliders'), sliderUD = $('flex-ud'), sliderRL = $('flex-rl'), sliderModel = null;
+  // up / down slider: right = Up, left = Down (same as a swipe in 1.2); right / left slider: right = tilt right, left = tilt left
+  function applySliders() { if (sliderModel && sliderModel.flex2) sliderModel.flex2(-sliderUD.value / 100, -sliderRL.value / 100); }   // ch1-j (Michael): right/left follows the USER's view: thumb right moves the head toward the screen's right (front view)
+  sliderUD.addEventListener('input', applySliders); sliderRL.addEventListener('input', applySliders);
+  function slidersOn(m) {
+    sliderModel = m; sliderUD.value = 0; sliderRL.value = 0;
+    slidersEl.classList.add('on'); requestAnimationFrame(function () { if (sliderModel === m) slidersEl.classList.add('show'); });
+  }
+  function slidersOff() {
+    sliderModel = null; slidersEl.classList.remove('show');
+    setTimeout(function () { if (!sliderModel) slidersEl.classList.remove('on'); }, 380);
+  }
+  var FLEX_EXT = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+  // framing for every yaw the head can be turned to (drag pitch +-0.7) and for every flex the sliders can reach
+  function spinViews13(plain) {
+    var v = [];
+    for (var k = 0; k < 12; k++) [-0.7, 0, 0.7].forEach(function (pt) { v.push(plain ? { yaw: -Math.PI + k * Math.PI / 6, pitch: pt, poses: ['neutral'] } : { yaw: -Math.PI + k * Math.PI / 6, pitch: pt, flex: [[0, 0]] }); });
+    [0, Math.PI / 2, Math.PI, -Math.PI / 2].forEach(function (yw) { v.push(plain ? { yaw: yw, pitch: 0, poses: ['chinDown', 'chinUp', 'tiltLeft', 'tiltRight'] } : { yaw: yw, pitch: 0, flex: FLEX_EXT }); });
+    return v;
+  }
+  var SL_LIM = { x: 0.84, top: 0.94, bottom: -0.9 };   // ch1-j: was { x: 0.84, top: 0.78, bottom: -0.68 }; as large as keeps every part 20 px in (spin + both sliders)
+  function frameSl13(m, dur, tag) {
+    var plain = !m.isPlaneHead;
+    return useFit(m, '1.3s-' + (m.key || 'lines') + (tag || ''), spinViews13(plain), null, plain ? { planes: true, skin: true } : null, SL_LIM, dur);
+  }
+  // a screen with a head that spins by itself (first touch stops it for good, like 1.1) and two flex sliders
+  // preload: quietly fetch and build the next screen's head a moment after this one is up, so there is no wait between screens
+  function preloadHead(key, x) {
+    if (!key || !S.ok()) return;
+    setTimeout(function () { if (x.alive() && !S.model(key)) loadModel(key).catch(function () {}); }, 1500);
+  }
+  function slScreen(name, line, model, planesFade, nextModel, flipDown) {   // flipDown = screen 6: side curtains + grey stage
+    return { name: name, line: line, model: model, sliders: true, bg: flipDown ? BG_PICTURE : null, layoutGroup: 'sl13', dip: true,
+      enter: function (x) {
+        x.m.reset(); slidersOn(x.m);
+        if (flipDown) x.m.curtains(true);   // screen 6: the yellow head with the hair as two curtains at the sides, hanging down
+        frameSl13(x.m, 0, flipDown ? '-down' : '');
+        if (planesFade) x.m.fadePlanes(PLANE_OP, 1200);
+        S.setView(FRONT_3Q, 0);
+        spinUntilTouch();
+        preloadHead(nextModel, x);
+      } };
+  }
+
   function lessonSteps(id) {
     if (id === '1.1') {
       var s = [];
@@ -6328,20 +6725,22 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       // ch1-d: blue plane close to edge-on; the line starts on the blue plane above the upper crown and runs out
       // across the green plane; the planes and the line move with the head as one piece. Framing is fitted so the
       // planes and the line stay fully inside the bright part of the stage in both poses.
+      // ch1-i (Michael round 3): the first screen (head, no planes) is gone; the planes screen has the plain sentence; four new screens follow it; the old screens after them are unchanged (planes now 30% see-through).
       return [
-        { name: 'intro', line: L13.intro,
-          enter: function (x) { x.m.reset(); frame13(x.m, 900); return S.setView(VIEW_13, 900); } },
-        { name: 'planes', line: L13.intro,
-          enter: function (x) { x.m.reset(); frame13(x.m, 600); return S.setView(VIEW_13, 600).then(function () { return x.m.fadePlanes(1, 1200); }); } },
+        slScreen('planes', L13.planes, 'lines', true, 'pvblue'),
+        slScreen('vertical-blue', L13.vOut, 'pvblue', false, 'pvgreen'),
+        slScreen('vertical-green', L13.vOut, 'pvgreen', false, 'phyellow'),
+        slScreen('horizontal-up', L13.hUp, 'phyellow'),
+        slScreen('horizontal-down', L13.hDown, 'phyellow', false, null, true),
         { name: 'line-90-plane', line: L13.intro,
           enter: function (x) {
-            x.m.reset(); x.m.fadePlanes(1, 0); frame13(x.m, 600);
+            x.m.reset(); x.m.fadePlanes(PLANE_OP, 0); frame13(x.m, 600);
             return S.setView(VIEW_13, 600).then(function () { return wait(500); })
               .then(function () { return x.alive() && x.m.drawPlaneLine(); });
           } },
         { name: 'head-moves', line: L13.intro,
           enter: function (x) {
-            x.m.reset(); x.m.fadePlanes(1, 0); x.m.showPlaneLineNow(); frame13(x.m, 600);
+            x.m.reset(); x.m.fadePlanes(PLANE_OP, 0); x.m.showPlaneLineNow(); frame13(x.m, 600);
             return S.setView(VIEW_13, 600).then(function () { return wait(400); })
               .then(function () { return x.alive() && x.m.pose('chinDown', 1100); })
               .then(function () { return x.alive() && wait(1300); })
@@ -6349,12 +6748,12 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
           } },
         { name: 'key-point', line: L13.keyPoint,
           enter: function (x) {
-            x.m.reset(); x.m.fadePlanes(1, 0); x.m.showPlaneLineNow(); frame13(x.m, 600);
+            x.m.reset(); x.m.fadePlanes(PLANE_OP, 0); x.m.showPlaneLineNow(); frame13(x.m, 600);
             return S.setView(VIEW_13, 600);
           } },
         { name: 'hero', line: L13.hero,
           enter: function (x) {
-            x.m.reset(); x.m.fadePlanes(1, 0); x.m.showPlaneLineNow();
+            x.m.reset(); x.m.fadePlanes(PLANE_OP, 0); x.m.showPlaneLineNow();
             var f = frame13(x.m, 600);
             return S.setView(VIEW_13, 600).then(function () {
               if (x.alive()) S.frameTo({ push: f.push * 0.95, lift: f.lift, side: f.side }, 7000, true);
@@ -6362,7 +6761,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
           } },
         { name: 'end', line: L13.end,
           enter: function (x) {
-            x.m.reset(); x.m.fadePlanes(1, 0); x.m.showPlaneLineNow(); frame13(x.m, 900);
+            x.m.reset(); x.m.fadePlanes(PLANE_OP, 0); x.m.showPlaneLineNow(); frame13(x.m, 900);
             return S.setView(VIEW_13, 600);
           } }
       ];
@@ -6388,7 +6787,9 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       setProgress(step / steps.length, true);
       lessonLayout(id, steps[step].layoutGroup);
       stageEl.classList.add('dim');
-      return useModel(lessonModel[id], tok).then(function (m) {
+      // ch1-j: a start straight on a 1.3 plane screen loads THAT head first and keeps the stage black until it is ready (no generic head, no swap)
+      var firstKey = (steps[step] && steps[step].model) || lessonModel[id];
+      return useModel(firstKey, tok).then(function (m) {
         if (!alive(tok)) return;
         S.frameTo({ push: 1, lift: 0, side: 0 }, 0);
         runStep(id, steps, step, m, true);
@@ -6416,6 +6817,9 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       if (!last) { runStep(id, steps, i + 1, m); return; }
       finishLesson(id);
     }
+    if (!st.sliders) slidersOff();
+    // ch1-j: when this step needs another head, the thumbs fade out together with the stage and come back with the new head (the room stays reserved: no layout jump)
+    if (st.sliders && S.ok() && S.current() !== (st.model || lessonModel[id])) slidersEl.classList.remove('show');
     if (st.button === false) setPrimary(null);
     else setPrimary(U.continue, advance, !!st.early);
     if (S.ok()) S.setInteraction({ mode: 'none' });
@@ -6427,11 +6831,23 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     var dipP = preP.then(function (hidden) { return hidden ? 'hidden' : (st.dip && !entering ? stageDip() : false); });
     var enterP = dipP.then(function (dipped) {
       if (!alive(tok)) return;
-      if (S.ok() && S.setFitter) S.setFitter(null);
-      var r;
-      try { r = st.enter(x); } catch (e) { console.error(e); }
-      if (dipped) stageUndip();
-      return r;
+      // ch1-i: a step can need another head (1.3 plane heads); swap it in first, the stage is already faded out
+      var needKey = st.model || lessonModel[id];
+      var mp = (S.ok() && S.current() !== needKey) ? useModel(needKey, tok) : Promise.resolve(S.ok() && S.model(needKey) || m);
+      return mp.catch(function (err) {
+        console.warn('[mahd] 3D failed', err && err.message);
+        if (alive(tok)) goError(function () { startLesson(id, i); });
+        return null;
+      }).then(function (mm) {
+        if (!mm || !alive(tok)) return;
+        x.m = mm;
+        if (S.ok() && S.setBackground) S.setBackground(st.bg || null);   // stage is faded out here (dip / hidden / model swap)
+        if (S.ok() && S.setFitter) S.setFitter(null);
+        var r;
+        try { r = st.enter(x); } catch (e) { console.error(e); }
+        if (dipped) stageUndip();
+        return r;
+      });
     });
     Promise.all([lineP, enterP]).then(function () {
       if (alive(tok) && st.button !== false) enablePrimary();
