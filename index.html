@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="ch1-k">
+<html lang="en" data-build="21-b">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -248,6 +248,46 @@ button:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
 /* ch1-j: the thumbs fade out quickly (they must be gone before the stage is fully black while a new head loads) and fade in with the head */
 .flexsliders:not(.show) { transition-duration: 0.15s; }
 
+/* ---------- 21-a: Lesson 2.1 (black Reels look; red #E8452C, blue #5B7CFA, teal #2FB8A6, purple #A070F0 only inside the chart and drawing) ---------- */
+#scr-l21 .l21-body { position: absolute; left: 0; right: 0; top: calc(var(--st) + 52px); bottom: calc(var(--sb) + 16px + 56px + 14px); }
+.l21-pane { position: absolute; top: 0; bottom: 0; left: 50%; width: var(--w); margin-left: calc(var(--w) / -2); opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }
+.l21-pane.on { opacity: 1; visibility: visible; transition: opacity 0.5s ease; }
+#l21-ideas { display: flex; flex-direction: column; padding: 0; }
+#l21-ideas ul { margin: 0; padding: 0; list-style: none; }
+#l21-ideas li { margin: 0 0 9px; font-size: 17px; line-height: 1.28; font-weight: 600; color: var(--paper); }
+#l21-ideas li:last-child { margin-bottom: 0; }
+#l21-ideas .key-red { color: #E8452C; }
+#l21-ideas .key-blue { color: #5B7CFA; }
+#l21-ideas .l21-draw { flex: 1 1 auto; min-height: 0; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
+#l21-ideas .l21-draw svg { width: 100%; max-width: 420px; max-height: 100%; height: auto; display: block; }
+#l21-road { display: flex; flex-direction: column; align-items: center; padding: 0; }
+.l21-chart { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.l21-chart svg { width: 100%; max-width: 342px; max-height: 100%; height: auto; display: block; }
+.l21-line { flex: 0 0 auto; width: 100%; max-width: 342px; margin: 8px 0 0; min-height: 3.9em; text-align: center; font-size: 19px; line-height: 1.3; font-weight: 600; color: var(--paper); opacity: 1; transition: opacity 0.4s ease; }
+.l21-line.out { opacity: 0; }
+#l21-hero { display: flex; align-items: center; justify-content: center; padding: 0; text-align: center; }
+#l21-hero .big { font-size: 28px; }
+/* chart boxes: fade in as the student taps; the next box shows as a faint outline that pulses softly */
+.rm-box { opacity: 0; transition: opacity 0.6s ease; }
+.rm-box.show { opacity: 1; }
+.rm-ghost { opacity: 0; fill: none; stroke: #fff; stroke-width: 2; stroke-dasharray: 4 5; cursor: pointer; transition: opacity 0.4s ease; }
+.rm-ghost.next { opacity: 0.8; animation: rmPulse 2.4s ease-in-out infinite; }
+.rm-hit { fill: transparent; cursor: pointer; pointer-events: none; }
+.rm-hit.next { pointer-events: all; }
+@keyframes rmPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }   /* 21-b: dim phase = white at 60% = about 7:1 on black (was about 1.3:1) */
+.primary.pulse { animation: btnPulse 2.4s ease-in-out infinite; }
+@keyframes btnPulse { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+.modhead { padding: 18px 24px 6px 24px; pointer-events: none; }
+.modhead .modlabel { display: block; font-size: 16px; line-height: 1.3; font-weight: 600; color: var(--soft); }
+.modhead .modtitle { display: block; font-size: 22px; line-height: 1.25; font-weight: 700; color: var(--paper); }
+/* 21-a: the path now has a Module 2 heading and Lesson 2.1 under the test: tighter rows on short screens, and the list scrolls if it still does not fit */
+.rows { bottom: calc(var(--sb) + 16px + 56px + 12px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.rows::-webkit-scrollbar { display: none; }
+.modhead::before, .modhead + li::before { display: none !important; }
+@media (max-height: 740px) { .rows .row { min-height: 60px; } .modhead { padding-top: 8px; } }
+/* 21-b: the Module 2 heading is tighter so the five rows fit at 375x667 with no scroll */
+@media (max-height: 740px) { .modhead { padding: 0 24px 0; } }
+
 </style>
 </head>
 <body>
@@ -308,6 +348,27 @@ button:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
       <div class="answers" id="answers" role="group"></div>
       <div class="yesno" id="yesno" role="group"></div>
       <button class="primary" id="lesson-primary" type="button"></button>
+    </div>
+  </section>
+
+  <!-- 21-a: Lesson 2.1 (own screen: no 3D, steps swap content inside it) -->
+  <section class="screen" id="scr-l21" aria-label="Lesson 2.1">
+    <div class="topbar" data-ui>
+      <button class="x-btn" id="x21-btn" type="button">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 3 L17 17 M17 3 L3 17" stroke="#fff" stroke-width="1.8" fill="none"/></svg>
+      </button>
+      <div class="progress" aria-hidden="true"><div class="progress-fill" id="l21-fill"></div></div>
+    </div>
+    <div class="l21-body">
+      <div class="l21-pane" id="l21-ideas"></div>
+      <div class="l21-pane" id="l21-road">
+        <div class="l21-chart" id="l21-chart"></div>
+        <p class="l21-line" id="l21-line"></p>
+      </div>
+      <div class="l21-pane" id="l21-hero"><h2 class="big" id="l21-hero-line"></h2></div>
+    </div>
+    <div class="bottom" data-ui>
+      <button class="primary" id="l21-primary" type="button"></button>
     </div>
   </section>
 
@@ -3940,8 +4001,12 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       '1.1': { num: '1.1', title: 'Bones of the Head' },
       '1.2': { num: '1.2', title: 'Invisible Lines' },
       '1.3': { num: '1.3', title: 'Invisible Planes' },
-      'test': { num: '', title: 'Chapter 1 Test' }
+      'test': { num: '', title: 'Chapter 1 Test' },
+      // 21-b: Lesson 2.1. Title exactly "Mapping a Haircut" (Michael)
+      '2.1': { num: '2.1', title: 'Mapping a Haircut' }
     },
+
+    module2: { label: 'Module 2', title: '9 Core Silhouettes' },
 
     l11: {
       warmupLabel: "Let's see what you already know",
@@ -3982,6 +4047,31 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       keyPoint: 'Visualize these planes and lines, so when we build the haircut, we have a reference point of a starting point.',
       hero: HERO_LINE,
       end: 'Time to test what you know.'
+    },
+
+    // 21-a: Lesson 2.1, every line word for word from /workspace/fundamentals-videos/LESSON-2.1-ONE-PAGE-PLAN.md (approved by Michael 2026-10-10)
+    l21: {
+      ideas: [
+        'Red means silhouette. It shows the shape and where you cut your design line.',
+        'Blue means sectioning and the direction of the hair section.',
+        'Four words to know: shape, vertical section, design line, sub-section.',
+        'Every haircut has an interior and a perimeter. Layers and graduation live in the interior. Lines live in the fringe, face frame and length.'
+      ],
+      // box names are the chart's own names (video), lines are the approved roadmap lines, in order
+      roadmap: [
+        { name: 'Silhouette', line: 'Start here. Your silhouette is elevation and shape.' },
+        { name: 'Elevation', line: 'Layers, graduation or line.' },
+        { name: 'Shape', line: 'Square, circle or triangle. Combine and reshape them to suit your client.' },
+        { name: 'Sectioning', line: 'Vertical, horizontal or diagonal.' },
+        { name: 'Direction', line: 'On base, forward directed or backward directed.' },
+        { name: 'Length', line: 'From the scalp to the silhouette design line.' },
+        { name: 'Cutting Technique', line: 'Scissor or razor.' },
+        { name: 'Optional', line: 'Texturizing, finishing and styling.' }
+      ],
+      hero: 'Layers, graduation and lines are not haircuts. They are your ingredients. Always start with your roadmap: the silhouette first.',
+      // labels of the interior / perimeter drawing and the elevation labels (the chart's own words)
+      draw: { fringe: 'Fringe', interior: 'Interior', faceFrame: 'Face Frame', length: 'Length' },
+      elevation: ['Layers', 'Graduation', 'Line']
     },
 
     test: {
@@ -6065,13 +6155,13 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
  */
 (function () {
   'use strict';
-  var BUILD = 'ch1-k';
+  var BUILD = '21-b';
   document.documentElement.setAttribute('data-build', BUILD);
   console.info('[mahd] build ' + BUILD);
 
   var C = window.MAHD_CONTENT, S = window.MahdStage, U = C.ui;
   var STORE = 'mahd.ch1.v1';
-  var ORDER = ['1.1', '1.2', '1.3', 'test'];
+  var ORDER = ['1.1', '1.2', '1.3', 'test', '2.1'];
   var PROFILE = { yaw: -Math.PI / 2, pitch: 0 };            // +X side to camera: face left, occipital right (as 1.3y)
   // (ch1-e: the 1.2 side-slide framing is replaced by one fitted frame for every 1.2 3D step, see frame12)
   // 1.3 (ch1-d): back view turned a little so the blue plane is close to edge-on and the line runs out across
@@ -6099,7 +6189,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
   /* ---------------- saved progress ---------------- */
   // at = place in the first run of a lesson; replay = place while re-opening a Done lesson (Done never goes back).
-  function defaults() { return { v: 1, welcomed: false, done: {}, at: null, replay: null, test: null, warm: {}, l12n: 6, l13n: 10 }; }
+  function defaults() { return { v: 1, welcomed: false, done: {}, at: null, replay: null, at21: null, replay21: null, test: null, warm: {}, l12n: 6, l13n: 10 }; }
   function loadState() {
     try {
       var raw = localStorage.getItem(STORE);
@@ -6110,6 +6200,9 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       // ch1-f: the 1.2 step-count marker must be read BEFORE the missing keys are filled in, or every old save looks new
       var oldL12 = s.l12n !== 6, oldL13 = s.l13n !== 10;
       Object.keys(d).forEach(function (k) { if (s[k] === undefined) s[k] = d[k]; });
+      // 21-b: Lesson 2.1 has its own saved place (at21 / replay21), so it can never overwrite a Chapter 1 place. 21-a saves kept it in at / replay.
+      if (s.at && s.at.id === '2.1') { if (!s.at21) s.at21 = s.at; s.at = null; }
+      if (s.replay && s.replay.id === '2.1') { if (!s.replay21) s.replay21 = s.replay; s.replay = null; }
       if (s.at && s.done[s.at.id]) { s.replay = s.at; s.at = null; } // older saves (ch1-c) kept a replay in "at"
       // ch1-e: 1.2 went from 7 steps to 6 (Floor vs Head removed, it was step 5). Older saves past it move back one.
       if (oldL12) {
@@ -6142,16 +6235,20 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   var state = loadState();
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
   function placeOf(id) {
-    if (state.done[id]) return state.replay && state.replay.id === id ? state.replay : null;
-    return state.at && state.at.id === id ? state.at : null;
+    var A = id === '2.1' ? state.at21 : state.at, R = id === '2.1' ? state.replay21 : state.replay;   // 21-b: 2.1 has its own slots
+    if (state.done[id]) return R && R.id === id ? R : null;
+    return A && A.id === id ? A : null;
   }
   function setPlace(id, step) {
-    if (state.done[id]) state.replay = { id: id, step: step }; else state.at = { id: id, step: step };
+    var k = id === '2.1' ? '21' : '';
+    if (state.done[id]) state['replay' + k] = { id: id, step: step }; else state['at' + k] = { id: id, step: step };
     save();
   }
   function clearPlace(id) {
     if (state.at && state.at.id === id) state.at = null;
     if (state.replay && state.replay.id === id) state.replay = null;
+    if (state.at21 && state.at21.id === id) state.at21 = null;
+    if (state.replay21 && state.replay21.id === id) state.replay21 = null;
   }
   window.addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', function () { if (document.hidden) save(); });
@@ -6159,7 +6256,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   /* ---------------- dom helpers ---------------- */
   function $(id) { return document.getElementById(id); }
   var stageEl = $('stage');
-  var screens = { welcome: $('scr-welcome'), path: $('scr-path'), lesson: $('scr-lesson'), error: $('scr-error') };
+  var screens = { welcome: $('scr-welcome'), path: $('scr-path'), lesson: $('scr-lesson'), l21: $('scr-l21'), error: $('scr-error') };
   var current = { screen: null, id: null, step: 0 };
   var runTok = 0;
   function alive(tok) { return tok === runTok; }
@@ -6440,6 +6537,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
 
   /* ---------------- path ---------------- */
   function isUnlocked(id) {
+    if (id === '2.1') return true;   // 21-a: Lesson 2.1 is open from the start (no unlock rule in the Compass flow; open question)
     var i = ORDER.indexOf(id);
     return i === 0 || !!state.done[ORDER[i - 1]];
   }
@@ -6464,8 +6562,13 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     var nxt = nextItem();
     ORDER.forEach(function (id) {
       var L = C.lessons[id];
+      if (id === '2.1') {   // 21-a: Module 2 heading above Lesson 2.1
+        var mh = document.createElement('li'); mh.className = 'modhead';
+        mh.innerHTML = '<span class="modlabel">' + escapeHtml(C.module2.label) + '</span><span class="modtitle">' + escapeHtml(C.module2.title) + '</span>';
+        rows.appendChild(mh);
+      }
       var done = !!state.done[id], open = isUnlocked(id), isNext = !done && id === nxt;
-      var resuming = !done && state.at && state.at.id === id;
+      var resuming = !done && !!placeOf(id);
       var li = document.createElement('li');
       var b = document.createElement('button');
       b.type = 'button';
@@ -6499,7 +6602,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
     if (nxt) {
       pb.hidden = false;
       var short = nxt === 'test' ? C.lessons.test.title : nxt;
-      pb.textContent = (state.at && state.at.id === nxt ? U.resume : U.start) + ' ' + short;
+      pb.textContent = (!state.done[nxt] && placeOf(nxt) ? U.resume : U.start) + ' ' + short;
       pb.onclick = function (e) { e.stopPropagation(); openItem(nxt); };
     } else {
       pb.hidden = true;
@@ -6521,8 +6624,141 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   }
   function openItem(id) {
     var place = placeOf(id), step = place ? place.step : 0;
-    if (id === 'test') startTest(); else startLesson(id, step || 0);
+    if (id === 'test') startTest(); else if (id === '2.1') start21(step || 0); else startLesson(id, step || 0);
   }
+
+  /* ---------------- Lesson 2.1 (21-a): quick ideas, roadmap (8 boxes, a tap for each), hero line ---------------- */
+  // Our reading (Glass suggestion, not decided by Michael): the chart is redrawn natively in the chart's colour logic on black;
+  // the next box shows as a faint pulsing outline and the main button pulses softly; boxes fade in. Steps: 0 quick ideas, 1..8 roadmap with that many boxes, 9 hero line.
+  var L21 = C.l21, N21 = 10, tok21 = 0, step21 = 0, busy21 = false;
+  var RM = { red: '#E8452C', blue: '#5B7CFA', teal: '#2FB8A6', purple: '#A070F0' };
+  var panes21 = { ideas: $('l21-ideas'), road: $('l21-road'), hero: $('l21-hero') }, primary21 = $('l21-primary'), line21 = $('l21-line'), chart21 = $('l21-chart');
+  function svgEl(tag, attrs, parent) { var e = document.createElementNS('http://www.w3.org/2000/svg', tag); Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); }); if (parent) parent.appendChild(e); return e; }
+  function txt21(parent, s, x, y, size, color, weight, anchor) { var t = svgEl('text', { x: x, y: y, 'font-size': size, fill: color, 'font-weight': weight || 700, 'text-anchor': anchor || 'middle', 'font-family': 'Inter, sans-serif' }, parent); t.textContent = s; return t; }
+  // chart: viewBox 320 x 360. Box k (0..7) = group .rm-box (+ its arrows and drawings), ghost = dashed outline of the next box
+  var BOX = [
+    { name: 0, x: 86, y: 0, w: 148, h: 44, c: 'red', oval: true },
+    { name: 1, x: 0, y: 62, w: 148, h: 44, c: 'red' }, { name: 2, x: 172, y: 62, w: 148, h: 44, c: 'red' },
+    { name: 3, x: 0, y: 198, w: 152, h: 46, c: 'blue' }, { name: 4, x: 168, y: 198, w: 152, h: 46, c: 'blue' },
+    { name: 5, x: 0, y: 262, w: 116, h: 46, c: 'teal' }, { name: 6, x: 128, y: 262, w: 192, h: 46, c: 'teal' },
+    { name: 7, x: 60, y: 326, w: 200, h: 34, c: 'purple' }
+  ];
+  function buildChart() {
+    chart21.innerHTML = '';
+    var svg = svgEl('svg', { viewBox: '0 0 320 360', role: 'img', 'aria-label': L21.roadmap.map(function (r) { return r.name; }).join(', ') }, chart21);
+    var defs = svgEl('defs', {}, svg), mk = svgEl('marker', { id: 'rm-arrow', viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: 'auto' }, defs);
+    svgEl('path', { d: 'M0 0 L8 4 L0 8 z', fill: 'rgba(255,255,255,0.7)' }, mk);
+    var arrow = function (g, d) { svgEl('path', { d: d, fill: 'none', stroke: 'rgba(255,255,255,0.7)', 'stroke-width': 1.6, 'marker-end': 'url(#rm-arrow)' }, g); };
+    var groups = [];
+    BOX.forEach(function (b, i) {
+      var g = svgEl('g', { 'class': 'rm-box', 'data-box': i }, svg), col = RM[b.c], name = L21.roadmap[i].name;
+      groups.push(g);
+      // arrows that lead INTO this box appear with it
+      if (i === 1) arrow(g, 'M140 44 C100 48 84 52 74 60'); if (i === 2) arrow(g, 'M180 44 C220 48 236 52 246 60');
+      if (i === 3) { arrow(g, 'M74 184 V196'); svgEl('path', { d: 'M246 160 V184 H74', fill: 'none', stroke: 'rgba(255,255,255,0.7)', 'stroke-width': 1.6 }, g); }
+      if (i === 4) arrow(g, 'M152 221 H166');
+      if (i === 5) arrow(g, 'M244 246 V254 H58 V260');
+      if (i === 6) arrow(g, 'M116 285 H126');
+      if (i === 7) arrow(g, 'M244 310 V318 H160 V324');
+      var shape = b.oval ? svgEl('ellipse', { cx: b.x + b.w / 2, cy: b.y + b.h / 2, rx: b.w / 2, ry: b.h / 2 }, g) : svgEl('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: 9 }, g);
+      shape.setAttribute('fill', col); shape.setAttribute('fill-opacity', b.oval ? 0.9 : 0.22); shape.setAttribute('stroke', col); shape.setAttribute('stroke-width', 2);
+      txt21(g, name, b.x + b.w / 2, b.y + b.h / 2 + 6, 16, '#fff', 700);
+      if (i === 1) L21.elevation.forEach(function (w, k) { txt21(g, w, 74, 124 + k * 20, 16, RM.red, 600); });
+      if (i === 2) {   // the three primary shapes, drawn (no words)
+        svgEl('rect', { x: 188, y: 122, width: 28, height: 28, fill: 'none', stroke: RM.red, 'stroke-width': 2 }, g);
+        svgEl('circle', { cx: 246, cy: 136, r: 15, fill: 'none', stroke: RM.red, 'stroke-width': 2 }, g);
+        svgEl('path', { d: 'M278 150 L292 122 L306 150 Z', fill: 'none', stroke: RM.red, 'stroke-width': 2, 'stroke-linejoin': 'round' }, g);
+      }
+    });
+    // ghost outlines + tap targets for the next box
+    var ghosts = BOX.map(function (b, i) {
+      var gh = b.oval ? svgEl('ellipse', { cx: b.x + b.w / 2, cy: b.y + b.h / 2, rx: b.w / 2, ry: b.h / 2, 'class': 'rm-ghost' }, svg) : svgEl('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: 9, 'class': 'rm-ghost' }, svg);
+      var hit = svgEl('rect', { x: b.x - 4, y: b.y - 4, width: b.w + 8, height: Math.max(b.h + 8, 48), 'class': 'rm-hit', 'data-hit': i }, svg);
+      hit.addEventListener('click', function (e) { e.stopPropagation(); if (hit.classList.contains('next')) next21(); });
+      return { gh: gh, hit: hit };
+    });
+    return { groups: groups, ghosts: ghosts };
+  }
+  var chart21State = null;
+  function buildIdeas() {
+    var el = panes21.ideas; el.innerHTML = '';
+    var ul = document.createElement('ul');
+    L21.ideas.forEach(function (t, i) {
+      var li = document.createElement('li');
+      if (i === 0) li.innerHTML = '<span class="key-red">Red</span>' + escapeHtml(t.slice(3));
+      else if (i === 1) li.innerHTML = '<span class="key-blue">Blue</span>' + escapeHtml(t.slice(4));
+      else li.textContent = t;
+      ul.appendChild(li);
+    });
+    el.appendChild(ul);
+    // interior vs perimeter: simple redraw of the lesson's Fringe / Interior / Face Frame / Length line drawing (our reading)
+    var wrap = document.createElement('div'); wrap.className = 'l21-draw'; el.appendChild(wrap);
+    var svg = svgEl('svg', { viewBox: '-14 0 344 150', role: 'img', 'aria-label': [L21.draw.fringe, L21.draw.interior, L21.draw.faceFrame, L21.draw.length].join(', ') }, wrap);
+    var d = L21.draw;
+    // 21-b: neutral tones only (white outline, grey fills), so it does not reuse the chart's meaning colours. The edge of the haircut (Fringe, Face Frame, Length) is light grey against the dark Interior.
+    var OUT = 'M150 14 C215 10 252 48 248 96 L244 128 L140 128 C128 112 122 92 124 70 C120 40 130 20 150 14 Z';
+    var cp = svgEl('clipPath', { id: 'l21-clip' }, svg); svgEl('path', { d: OUT }, cp);
+    svgEl('path', { d: OUT, fill: '#101010' }, svg);                                                        // interior (dark)
+    var edge = svgEl('g', { 'clip-path': 'url(#l21-clip)' }, svg);
+    svgEl('path', { d: 'M110 4 L260 4 L260 38 C210 30 170 34 128 46 L110 52 Z', fill: '#fff', 'fill-opacity': 0.5 }, edge);     // fringe
+    svgEl('path', { d: 'M110 46 C150 36 160 36 176 42 L166 110 L110 110 Z', fill: '#fff', 'fill-opacity': 0.28 }, edge);            // face frame
+    svgEl('rect', { x: 110, y: 100, width: 150, height: 30, fill: '#fff', 'fill-opacity': 0.72 }, edge);                              // length (a clear band)
+    svgEl('path', { d: OUT, fill: 'none', stroke: '#fff', 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+    var lead = function (x1, y1, x2, y2) { svgEl('path', { d: 'M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2, stroke: 'rgba(255,255,255,0.7)', 'stroke-width': 1.4, fill: 'none' }, svg); };
+    txt21(svg, d.fringe, 96, 30, 18, '#fff', 600, 'end'); lead(100, 26, 140, 30);
+    txt21(svg, d.faceFrame, 96, 80, 18, '#fff', 600, 'end'); lead(100, 74, 132, 76);
+    txt21(svg, d.interior, 252, 52, 18, '#fff', 600, 'start'); lead(248, 50, 200, 66);
+    txt21(svg, d.length, 252, 134, 18, '#fff', 600, 'start'); lead(248, 126, 214, 116);
+  }
+  function showPane21(name) { Object.keys(panes21).forEach(function (k) { panes21[k].classList.toggle('on', k === name); }); }
+  function setLine21(t) {
+    if (reduced) { line21.textContent = t; return; }
+    line21.classList.add('out');
+    setTimeout(function () { line21.textContent = t; line21.classList.remove('out'); }, 380);
+  }
+  function render21(step, entering) {
+    step21 = step; current.step = step;
+    setPlace('2.1', step);
+    $('l21-fill').style.transform = 'scaleX(' + ((step + 1) / N21) + ')';
+    primary21.classList.toggle('pulse', step >= 1 && step <= 8);
+    if (step === 0) { showPane21('ideas'); }
+    else if (step <= 8) {
+      showPane21('road');
+      var n = step;
+      chart21State.groups.forEach(function (g, i) { g.classList.toggle('show', i < n); });
+      chart21State.ghosts.forEach(function (o, i) {
+        var isNext = i === n && n < 8;
+        o.gh.classList.toggle('next', isNext); o.hit.classList.toggle('next', isNext);
+      });
+      if (entering) line21.textContent = L21.roadmap[n - 1].line; else setLine21(L21.roadmap[n - 1].line);
+    } else { showPane21('hero'); }
+    // button: a short beat so a double tap cannot skip a box
+    primary21.disabled = true; primary21.classList.add('wait');
+    setTimeout(function () { if (tok21 === tokNow21) { primary21.disabled = false; primary21.classList.remove('wait'); } }, reduced ? 40 : 650);
+    var tokNow21 = tok21;
+  }
+  function next21() {
+    if (busy21 || primary21.disabled) return;
+    if (step21 >= N21 - 1) { finish21(); return; }
+    render21(step21 + 1, false);
+  }
+  function finish21() {
+    clearPlace('2.1'); state.done['2.1'] = true; save();
+    goPath();
+  }
+  function start21(step) {
+    runTok++; tok21++;
+    current.id = '2.1'; current.kind = 'lesson';
+    step = Math.max(0, Math.min(N21 - 1, step | 0));
+    buildIdeas(); chart21State = buildChart(); $('l21-hero-line').textContent = L21.hero;
+    primary21.hidden = false; primary21.textContent = U.continue;
+    primary21.onclick = function (e) { e.stopPropagation(); next21(); };
+    Object.keys(panes21).forEach(function (k) { panes21[k].classList.remove('on'); });
+    showScreen('l21');
+    render21(step, true);
+  }
+  $('x21-btn').setAttribute('aria-label', U.exitLabel);
+  $('x21-btn').addEventListener('click', function (e) { e.stopPropagation(); exitToPath(); });
 
   /* ---------------- error (13) ---------------- */
   var errorRetry = null;
