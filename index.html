@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="ch1-j">
+<html lang="en" data-build="ch1-k">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -241,7 +241,10 @@ button:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
 .flexslider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255,255,255,0.6); }
 
 /* ch1-j: 1.3 screen 6 only: the grey stage. The side fades are wider so nothing grey is lit within 20 px of the screen sides. */
-#stage.greybg .stage-fade.left, #stage.greybg .stage-fade.right { width: 56px; }
+#stage.greybg .stage-fade.left, #stage.greybg .stage-fade.right { width: 60px; }
+/* ch1-k: fully black for the outer 20 px of the screen, then fades into the grey by 60 px (was a plain 0 to 56 px fade that left up to 24/255 at 20 px) */
+#stage.greybg .stage-fade.left { background: linear-gradient(to right, #000 0, #000 20px, rgba(0,0,0,0) 60px); }
+#stage.greybg .stage-fade.right { background: linear-gradient(to left, #000 0, #000 20px, rgba(0,0,0,0) 60px); }
 /* ch1-j: the thumbs fade out quickly (they must be gone before the stage is fully black while a new head loads) and fade in with the head */
 .flexsliders:not(.show) { transition-duration: 0.15s; }
 
@@ -5724,7 +5727,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       flexBy: function (df) { setFlex(flexValue() + df); Stage.kick(); },
       flexSet: function (f) { setFlex(f); Stage.kick(); },
       flexValue: flexValue,
-      flexInfo: function () { root.updateMatrixWorld(true); return { morph: { pitchDeg: +(refs.morph.pitch / DEG).toFixed(3), rollDeg: +((refs.morph.roll || 0) / DEG).toFixed(3) }, planeWorld: refs.planes[0].getWorldPosition(new THREE.Vector3()).toArray().map(function (v) { return +v.toFixed(4); }) }; },
+      flexInfo: function () { root.updateMatrixWorld(true); return { faceUp: +new THREE.Vector3(0, 0, 1).transformDirection(refs.skullPivot.matrixWorld).y.toFixed(4), morph: { pitchDeg: +(refs.morph.pitch / DEG).toFixed(3), rollDeg: +((refs.morph.roll || 0) / DEG).toFixed(3) }, planeWorld: refs.planes[0].getWorldPosition(new THREE.Vector3()).toArray().map(function (v) { return +v.toFixed(4); }) }; },
       flex2: function (f, r) { setFlex2(f, r); Stage.kick(); },
       flexValues: function () { return refs.morph ? { f: pitchToFlex(refs.morph.pitch), r: (refs.morph.roll || 0) / ROLL_FULL } : { f: 0, r: 0 }; },
       poseNow: function (key) { setPoseImmediate(key); Stage.kick(); },
@@ -6029,7 +6032,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
       fitFrame: fitFrame,
       info: function () {
         root.updateMatrixWorld(true);
-        return { key: key, planes: refs.planes.map(function (p) { var mm = matsOf(p)[0]; return { name: p.name, material: mm.name, hex: planeColorHex(p), opacity: +mm.opacity.toFixed(3), transparent: mm.transparent, depthWrite: mm.depthWrite, side: mm.side }; }),
+        return { key: key, faceUp: +new THREE.Vector3(0, 0, 1).transformDirection(refs.skullPivot.matrixWorld).y.toFixed(4), planes: refs.planes.map(function (p) { var mm = matsOf(p)[0]; return { name: p.name, material: mm.name, hex: planeColorHex(p), opacity: +mm.opacity.toFixed(3), transparent: mm.transparent, depthWrite: mm.depthWrite, side: mm.side }; }),
           morph: { pitchDeg: +(morph.pitch / DEG).toFixed(3), rollDeg: +(morph.roll / DEG).toFixed(3) },
           planeWorld: refs.planes[0].getWorldPosition(new THREE.Vector3()).toArray().map(function (v) { return +v.toFixed(4); }),
           strands: strandInfo(),
@@ -6062,7 +6065,7 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
  */
 (function () {
   'use strict';
-  var BUILD = 'ch1-j';
+  var BUILD = 'ch1-k';
   document.documentElement.setAttribute('data-build', BUILD);
   console.info('[mahd] build ' + BUILD);
 
@@ -6556,8 +6559,30 @@ window.__MAHD_GLB = {"bones":"Z2xURgIAAAA8DAsArBgAAEpTT057ImFzc2V0Ijp7ImdlbmVyYX
   var BG_PICTURE = 0x434343;   // ch1-j: the dark grey of Michael's Blender picture for screen 6 (sampled: rgb 63-70)
   var PLANE_OP = 0.7;   // 30% see-through (was 1, fully opaque)
   var slidersEl = $('flexsliders'), sliderUD = $('flex-ud'), sliderRL = $('flex-rl'), sliderModel = null;
-  // up / down slider: right = Up, left = Down (same as a swipe in 1.2); right / left slider: right = tilt right, left = tilt left
-  function applySliders() { if (sliderModel && sliderModel.flex2) sliderModel.flex2(-sliderUD.value / 100, -sliderRL.value / 100); }   // ch1-j (Michael): right/left follows the USER's view: thumb right moves the head toward the screen's right (front view)
+  // up / down slider: right = Up (the face looks up, whatever the spin angle); right / left slider (ch1-k): follows the USER's view at ANY spin angle.
+  // Thumb right leans the head toward the screen's right: a tilt about the camera's view axis, which in the head's own frame is a mix of roll
+  // (front and back views) and pitch (side views): roll = -c * cos(yaw) * cos(pitch), pitch = c * sin(yaw) * cos(pitch) (c = slider * 40 deg, pitch part held to the 26 deg range).
+  var LEAN_DEG = 40, LEAN_PITCH_MAX = 26;
+  function applySliders() {
+    if (!sliderModel || !sliderModel.flex2) return;
+    var ud = -sliderUD.value / 100, c = sliderRL.value / 100, v = S.getView ? S.getView() : null, yaw = v ? v.yaw : 0, pt = v ? v.pitch : 0;
+    var lp = Math.max(-LEAN_PITCH_MAX, Math.min(LEAN_PITCH_MAX, c * LEAN_DEG * Math.sin(yaw) * Math.cos(pt)));   // degrees of nod the lean needs
+    var f = ud + (lp >= 0 ? lp / 43 : lp / LEAN_PITCH_MAX), r = -c * Math.cos(yaw) * Math.cos(pt);
+    sliderModel.flex2(Math.max(-1, Math.min(1, f)), Math.max(-1, Math.min(1, r)));
+    lastView = v ? [v.yaw, v.pitch] : null;
+    if (!tickOn && (+sliderUD.value || +sliderRL.value)) { tickOn = true; requestAnimationFrame(sliderTick); }
+  }
+  // the lean follows the screen while the head is turned by hand: re-aim it whenever the view changes (only while a slider is off zero)
+  var lastView = null, tickOn = false;
+  function sliderTick() {
+    if (!sliderModel || !(+sliderUD.value || +sliderRL.value)) { tickOn = false; return; }
+    var v = S.getView ? S.getView() : null;
+    if (v && lastView && (Math.abs(v.yaw - lastView[0]) > 1e-4 || Math.abs(v.pitch - lastView[1]) > 1e-4)) applySliders();
+    requestAnimationFrame(sliderTick);
+  }
+  // ch1-k: the first touch on either slider stops the auto-spin for good, like a touch on the head (the 1.1 rule)
+  function sliderTouched() { if (S.ok()) S.setSpin(false); }
+  [sliderUD, sliderRL].forEach(function (el) { ['pointerdown', 'touchstart', 'mousedown', 'input'].forEach(function (ev) { el.addEventListener(ev, sliderTouched, { passive: true }); }); });
   sliderUD.addEventListener('input', applySliders); sliderRL.addEventListener('input', applySliders);
   function slidersOn(m) {
     sliderModel = m; sliderUD.value = 0; sliderRL.value = 0;
